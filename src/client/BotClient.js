@@ -8,6 +8,7 @@ const MessageService = require("../services/MessageService");
 const MediaService = require("../services/MediaService");
 const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
+const ModelService = require("../services/ModelService");
 
 class BotClient extends Client {
     constructor() {
@@ -151,6 +152,7 @@ class BotClient extends Client {
             await this.loadAndRegisterCommands();
             await this.loadEvents();
 
+            logger.info(`💾  ${ModelService.getModelCount()} Models geladen`);
             logger.info(`⚙️  ${ConfigService.getConfigCount()} Konfigurationen geladen`);
             logger.info(`💬  ${MessageService.getMessageCount()} Nachrichtendateien geladen`);
             logger.info(`🖼️ ${MediaService.getMediaCount()} Mediendateien geladen`);
