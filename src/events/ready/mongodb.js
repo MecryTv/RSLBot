@@ -10,7 +10,7 @@ class MongoDB extends Event {
   }
 
   async execute() {
-      if (!DATABASE.DISCORD) {
+      if (!DATABASE.URI) {
           return Guardian.handleEvent(
               "Die MongoDB URL fehlt in der config.json.",
               { eventName: this.name }
@@ -23,7 +23,7 @@ class MongoDB extends Event {
           this.client.discordDB = baseConnection.useDb(DATABASE.DB_DISCORD);
           this.client.websiteDB = baseConnection.useDb(DATABASE.DB_WEBSITE);
 
-          logger.info("✅ MongoDB Cluster connected (Discord & Website DBs ready)");
+          logger.info("✅  MongoDB Cluster connected (Discord & Website DBs ready)");
       } catch (error) {
           Guardian.handleEvent(
               `Verbindung fehlgeschlagen. Grund: ${error.message}`,
