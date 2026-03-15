@@ -11,7 +11,7 @@ class MessageService {
     _loadMessages() {
         const messagesPath = path.join(__dirname, '..', 'messages');
         if (!fs.existsSync(messagesPath)) {
-            return Guardian.handleGeneric(`Das Nachrichtenverzeichnis (${messagesPath}) existiert nicht.`, 'MessageService Init');
+            return Guardian.handleGeneric(`The message directory (${messagesPath}) does not exist`, 'MessageService Init');
         }
 
         const messageFiles = fs.readdirSync(messagesPath).filter(file => file.endsWith('.json'));
@@ -23,7 +23,7 @@ class MessageService {
                 const messageName = path.basename(file, '.json');
                 this.messages.set(messageName, messageData);
             } catch (error) {
-                Guardian.handleGeneric(`Fehler beim Laden der Nachrichtendatei ${file}.`, 'MessageService Load', error.stack);
+                Guardian.handleGeneric(`Error loading the message file ${file}`, 'MessageService Load', error.stack);
             }
         }
     }
@@ -33,16 +33,16 @@ class MessageService {
         let message = this.messages.get(fileName);
 
         if (!message) {
-            Guardian.handleGeneric(`Nachrichtendatei mit dem Key '${fileName}' wurde nicht gefunden.`, 'MessageService Get');
-            return `[Fehler: Nachrichtendatei '${fileName}' nicht gefunden]`;
+            Guardian.handleGeneric(`The message file with the key ‘${fileName}’ was not found`, 'MessageService Get');
+            return `[Error: Message file ‘${fileName}’ not found]`;
         }
 
         for (const part of path) {
             if (message && typeof message === 'object' && part in message) {
                 message = message[part];
             } else {
-                Guardian.handleGeneric(`Nachrichtenschlüssel '${key}' wurde nicht gefunden.`, 'MessageService Get');
-                return `[Fehler: Schlüssel '${key}' nicht gefunden]`;
+                Guardian.handleGeneric(`The message key ‘${key}’ was not found`, 'MessageService Get');
+                return `[Error: Key ‘${key}’ not found]`;
             }
         }
 

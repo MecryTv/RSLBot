@@ -24,21 +24,21 @@ class MediaService {
                 }
             }
         } catch (error) {
-            Guardian.handleGeneric(`Fehler beim rekursiven Laden von Medien im Pfad ${dirPath}.`, 'MediaService Load', error.stack);
+            Guardian.handleGeneric(`Error loading media recursively in the path ${dirPath}`, 'MediaService Load', error.stack);
         }
     }
 
     _loadMedia() {
         const mediaPath = path.join(__dirname, '..', 'images');
         if (!fs.existsSync(mediaPath)) {
-            return Guardian.handleGeneric(`Das Medienverzeichnis (${mediaPath}) existiert nicht.`, 'MediaService Init');
+            return Guardian.handleGeneric(`The media directory (${mediaPath}) does not exist`, 'MediaService Init');
         }
         this._loadMediaRecursive(mediaPath);
     }
 
     get(key) {
         if (!this.media.has(key)) {
-            Guardian.handleGeneric(`Die Mediendatei mit dem Key '${key}' wurde nicht gefunden.`, 'MediaService Get');
+            Guardian.handleGeneric(`The media file with the key ‘${key}’ was not found`, 'MediaService Get');
             return null;
         }
         return this.media.get(key);
@@ -52,14 +52,14 @@ class MediaService {
         try {
             return new AttachmentBuilder(filePath, { name: path.basename(key), ...options });
         } catch(error) {
-            Guardian.handleGeneric(`Fehler beim Erstellen des Attachments für '${key}'.`, 'MediaService Attachment', error.stack);
+            Guardian.handleGeneric(`Error creating the attachment for ‘${key}’`, 'MediaService Attachment', error.stack);
             return null;
         }
     }
 
     getAttachmentURL(key) {
         if (!this.media.has(key)) {
-            Guardian.handleGeneric(`Die Mediendatei mit dem Key '${key}' für eine URL wurde nicht gefunden.`, 'MediaService GetURL');
+            Guardian.handleGeneric(`The media file with the key ‘${key}’ for a URL was not found`, 'MediaService GetURL');
             return null;
         }
         const fileName = path.basename(key);

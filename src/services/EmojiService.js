@@ -11,7 +11,7 @@ class EmojiService {
     _loadEmojis() {
         const emojisPath = path.join(__dirname, '..', 'config', 'emojis.json');
         if (!fs.existsSync(emojisPath)) {
-            return Guardian.handleGeneric(`Die Emoji-Konfigurationsdatei (${emojisPath}) existiert nicht.`, 'EmojiService Init');
+            return Guardian.handleGeneric(`The emoji configuration file (${emojisPath}) does not exist`, 'EmojiService Init');
         }
 
         try {
@@ -24,7 +24,7 @@ class EmojiService {
 
             this._flattenEmojis(emojiData);
         } catch (error) {
-            Guardian.handleGeneric('Fehler beim Laden oder Parsen der Emoji-Datei.', 'EmojiService Load', error.stack);
+            Guardian.handleGeneric('Error loading or parsing the emoji file', 'EmojiService Load', error.stack);
         }
     }
 
@@ -44,7 +44,7 @@ class EmojiService {
     getLocal(key) {
         const id = this.emojis.get(key);
         if (!id) {
-            Guardian.handleGeneric(`Emoji mit dem Key '${key}' wurde nicht gefunden.`, 'EmojiService Get');
+            Guardian.handleGeneric(`The emoji with the key ‘${key}’ was not found`, 'EmojiService Get');
             return null;
         }
 
@@ -61,14 +61,14 @@ class EmojiService {
 
     getServer(interaction, key) {
         if (!interaction || !interaction.guild) {
-            Guardian.handleGeneric('Interaction oder Guild war nicht verfügbar, um Server-Emoji zu suchen.', 'EmojiService GetServer');
+            Guardian.handleGeneric('Interaction or Guild was not available to search for server emojis', 'EmojiService GetServer');
             return null;
         }
 
         const emoji = interaction.guild.emojis.cache.find(e => e.name === key);
 
         if (!emoji) {
-            Guardian.handleGeneric(`Server-Emoji mit dem Namen '${key}' wurde nicht gefunden.`, 'EmojiService GetServer');
+            Guardian.handleGeneric(`The server emoji named ‘${key}’ was not found`, 'EmojiService GetServer');
             return null;
         }
 

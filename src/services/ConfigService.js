@@ -12,7 +12,7 @@ class ConfigService {
         const configPath = path.join(__dirname, '..', 'config');
 
         if (!fs.existsSync(configPath)) {
-            return Guardian.handleGeneric(`Das Konfigurationsverzeichnis (${configPath}) existiert nicht.`, 'ConfigService Init');
+            return Guardian.handleGeneric(`The configuration directory (${configPath}) does not exist`, 'ConfigService Init');
         }
 
         const configFiles = fs.readdirSync(configPath).filter(file => file.endsWith('.json'));
@@ -28,20 +28,20 @@ class ConfigService {
                     this.configs.set(configName, configData);
                 }
             } catch (error) {
-                Guardian.handleGeneric(`Fehler beim Laden der Konfigurationsdatei ${file}.`, 'ConfigService Load', error.stack);
+                Guardian.handleGeneric(`Error loading the configuration file ${file}`, 'ConfigService Load', error.stack);
             }
         }
     }
 
     _validateConfig(data, fileName) {
         if (!Array.isArray(data)) {
-            Guardian.handleGeneric(`Die Konfiguration in ${fileName} ist kein Array.`, 'ConfigService Validation');
+            Guardian.handleGeneric(`The configuration in ${fileName} is not an array`, 'ConfigService Validation');
             return false;
         }
 
         for (const item of data) {
             if (typeof item.pagination !== 'boolean' && typeof item.panigation !== 'boolean') {
-                Guardian.handleGeneric(`In ${fileName} fehlt das 'pagination' Feld oder es ist kein Boolean.`, 'ConfigService Validation');
+                Guardian.handleGeneric(`The ‘pagination’ field is missing from ${fileName}, or it is not a Boolean`, 'ConfigService Validation');
                 return false;
             }
         }
@@ -51,7 +51,7 @@ class ConfigService {
 
     get(key) {
         if (!this.configs.has(key)) {
-            Guardian.handleGeneric(`Die Konfiguration mit dem Key '${key}' wurde nicht gefunden.`, 'ConfigService Get');
+            Guardian.handleGeneric(`The configuration with the key ‘${key}’ was not found`, 'ConfigService Get');
             return null;
         }
         return this.configs.get(key);

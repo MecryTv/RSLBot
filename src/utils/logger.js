@@ -53,7 +53,6 @@ class ChronicleLogger {
             if (!fs.existsSync(this.logDirectory)) fs.mkdirSync(this.logDirectory, { recursive: true });
             if (!fs.existsSync(this.archiveDirectory)) fs.mkdirSync(this.archiveDirectory, { recursive: true });
 
-            // Zählt die Zeilen in der bestehenden Log-Datei, um nahtlos weiterzumachen.
             if (fs.existsSync(this.logFilePath)) {
                 const data = fs.readFileSync(this.logFilePath, 'utf8');
                 this.lineCount = data.split('\n').length - 1;
@@ -61,7 +60,7 @@ class ChronicleLogger {
 
             this.writeStream = fs.createWriteStream(this.logFilePath, { flags: 'a' });
         } catch (err) {
-            console.error("Fehler bei der Initialisierung des Chronicle Loggers:", err);
+            console.error("Error initializing the Chronicle Logger:", err);
         }
     }
 
@@ -82,14 +81,14 @@ class ChronicleLogger {
             this.writeStream = fs.createWriteStream(this.logFilePath, { flags: 'a' });
             this.lineCount = 0;
 
-            const message = `📜 Log-Archiv erstellt: ${path.basename(archivePath)}`;
+            const message = `📜 Log-Archive created: ${path.basename(archivePath)}`;
             this.info(message);
         }
     }
 
     /**
-     * @param {string} formattedMessage - Die bereits formatierte Nachricht.
-     * @param  {...any} args - Zusätzliche Argumente.
+     * @param {string} formattedMessage - The message that has already been formatted
+     * @param  {...any} args - Additional arguments
      * @private
      */
     _writeToFile(formattedMessage, ...args) {
@@ -98,7 +97,7 @@ class ChronicleLogger {
         const additionalArgs = args.length > 0 ? `\n${util.format(...args)}` : '';
 
         this.writeStream.write(`${cleanMessage}${additionalArgs}\n`, (err) => {
-            if (err) console.error("Fehler beim Schreiben in die Log-Datei:", err);
+            if (err) console.error("Error writing the log file:", err);
         });
 
         this.lineCount++;

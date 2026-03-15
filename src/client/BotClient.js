@@ -52,21 +52,21 @@ class BotClient extends Client {
                 }
                 count++;
             } catch (error) {
-                Guardian.handleGeneric(`Fehler beim Laden des Befehls in Datei: ${path.basename(file)}`, 'Command Loading', error.stack);
+                Guardian.handleGeneric(`Error loading the command from the file: ${path.basename(file)}`, 'Command Loading', error.stack);
             }
         }
 
         if (!BOT || !BOT.CLIENT_ID || !BOT.TOKEN) {
-            await Guardian.handleGeneric("CLIENT_ID oder TOKEN fehlt in der config.json. Der Bot kann nicht starten.", "Bot Initialization");
+            await Guardian.handleGeneric("CLIENT_ID or TOKEN is missing from config.json. The bot cannot start", "Bot Initialization");
             process.exit(1);
         }
 
         const rest = new REST({version: "10"}).setToken(BOT.TOKEN);
 
         await rest.put(Routes.applicationCommands(BOT.CLIENT_ID), { body: commandArray })
-            .then(() => logger.info(`🚀  ${count} Commands geladen`))
+            .then(() => logger.info(`🚀  ${count} Commands loaded`))
             .catch(err => {
-                Guardian.handleGeneric(`Fehler beim Registrieren der Slash Commands bei Discord. Grund`, "Discord API Error", err.stack);
+                Guardian.handleGeneric(`Error registering slash commands on Discord. Reason`, "Discord API Error", err.stack);
             });
     }
 
@@ -90,39 +90,11 @@ class BotClient extends Client {
                     }
                     count++;
                 } catch (error) {
-                    Guardian.handleGeneric(`Fehler beim Laden des Events in Datei: ${path.basename(file)}`, 'Event Loading', error.stack);
+                    Guardian.handleGeneric(`Error loading the event from the file: ${path.basename(file)}`, 'Event Loading', error.stack);
                 }
             }
         }
-        logger.info(`🚀  ${count} Events geladen`);
-    }
-
-    async loadCacheNodes() {
-        const cachePath = path.join(__dirname, '../cache');
-
-        if (!fs.existsSync(cachePath)) {
-            logger.warn('⚠️  Cache-Verzeichnis existiert nicht. Erstelle es...');
-            fs.mkdirSync(cachePath, { recursive: true });
-            return 0;
-        }
-
-        const cacheFiles = this.getAllFiles(cachePath).filter(file => file.endsWith('.js'));
-        let count = 0;
-
-        for (const file of cacheFiles) {
-            try {
-                require(file);
-                count++;
-            } catch (error) {
-                Guardian.handleGeneric(
-                    `Fehler beim Laden der CacheNode-Datei: ${path.basename(file)}`,
-                    'CacheNode Loading',
-                    error.stack
-                );
-            }
-        }
-
-        return count;
+        logger.info(`🚀  ${count} Events loaded`);
     }
 
     getAllFiles(dir) {
@@ -139,7 +111,7 @@ class BotClient extends Client {
             }
             return allFiles;
         } catch (error) {
-            Guardian.handleGeneric(`Fehler beim Lesen des Verzeichnisses: ${dir}`, "File System Error", error.stack);
+            Guardian.handleGeneric(`Error reading the directory: ${dir}`, "File System Error", error.stack);
             return [];
         }
     }
@@ -152,15 +124,15 @@ class BotClient extends Client {
             await this.loadAndRegisterCommands();
             await this.loadEvents();
 
-            logger.info(`💾  ${ModelService.getModelCount()} Models geladen`);
-            logger.info(`⚙️  ${ConfigService.getConfigCount()} Konfigurationen geladen`);
-            logger.info(`💬  ${MessageService.getMessageCount()} Nachrichtendateien geladen`);
-            logger.info(`🖼️ ${MediaService.getMediaCount()} Mediendateien geladen`);
-            logger.info(`😃  ${EmojiService.getEmojiCount()} Emojis geladen`);
+            logger.info(`💾  ${ModelService.getModelCount()} Models loaded`);
+            logger.info(`⚙️  ${ConfigService.getConfigCount()} Configurations loaded`);
+            logger.info(`💬  ${MessageService.getMessageCount()} Message files loaded`);
+            logger.info(`🖼️ ${MediaService.getMediaCount()} Media files loaded`);
+            logger.info(`😃  ${EmojiService.getEmojiCount()} Emojis loaded`);
 
             await this.login(token);
         } catch (error) {
-            await Guardian.handleGeneric(`Ein kritischer Fehler ist während des Bot-Starts aufgetreten: ${error.message}`, "Critical Startup Error");
+            await Guardian.handleGeneric(`A critical error occurred while the bot was starting: ${error.message}`, "Critical Startup Error");
         }
     }
 }

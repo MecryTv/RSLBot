@@ -10,21 +10,21 @@ class Guardian {
     }
 
     /**
-     * @returns {string} Die Fehler-ID im Format PL-TIMESTAMP-RANDOM.
+     * @returns {string} The error ID in the format RSL-TIMESTAMP-RANDOM.
      */
     generateErrorId() {
         const timestamp = Math.floor(Date.now() / 1000);
         const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
-        return `CW-${timestamp}-${randomPart}`;
+        return `RSL-${timestamp}-${randomPart}`;
     }
 
     /**
-     * @param {import('discord.js').Client} client Die Discord-Client-Instanz.
+     * @param {import('discord.js').Client} client - The Discord client instance.
      */
     initialize(client) {
         this.client = client;
         this._initializeGlobalHandlers();
-        logger.guardian('info', "✅  Guardian betriebsbereit");
+        logger.guardian('info', "✅  Guardian is operational");
     }
 
     /**
@@ -44,15 +44,15 @@ class Guardian {
     }
 
     /**
-     * @param {import('discord.js').Interaction} interaction - Die Interaktion, auf die geantwortet werden soll.
-     * @param {string} errorId - Die generierte Fehler-ID.
+     * @param {import('discord.js').Interaction} interaction - The interaction to which a response is required
+     * @param {string} errorId - The generated error ID
      * @private
      */
     async _sendUserReply(interaction, errorId) {
         if (!interaction || !interaction.channel || !interaction.isCommand()) return;
 
         const replyContent = {
-            content: `> Oops! 🛠️ Es ist ein unerwarteter Fehler aufgetreten.\n> **Fehler-ID:** \`${errorId}\`\n> \n> Bitte melde diese ID einem Teammitglied, damit wir das Problem schnell beheben können.`,
+            content: `> Oops! 🛠️ An unexpected error has occurred.\n> **Error ID:** \`${errorId}\`\n> \n> Please report this ID to a team member so we can resolve the issue quickly`,
             ephemeral: true,
         };
 
@@ -63,13 +63,13 @@ class Guardian {
                 await interaction.reply(replyContent);
             }
         } catch (e) {
-            logger.guardian("error", "Konnte User-Fehlermeldung nicht senden:", e);
+            logger.guardian("error", "Unable to send user error message:", e);
         }
     }
 
     /**
-     * @param {Error} error - Das Fehlerobjekt.
-     * @returns {{fileName: string, filePath: string, line: string} | null} Ein Objekt mit den Standortdetails oder null.
+     * @param {Error} error - The error object
+     * @returns {{fileName: string, filePath: string, line: string} | null} - An object containing the location details, or null.
      * @private
      */
     _parseStackForLocation(error) {
@@ -94,14 +94,14 @@ class Guardian {
     }
 
     /**
-     * @param {Error} error - Das Fehlerobjekt.
-     * @param {string} errorId - Die generierte Fehler-ID.
-     * @param {object} context - Zusätzliche Informationen über den Fehlerkontext.
+     * @param {Error} error - The error object
+     * @param {string} errorId - The generated error ID
+     * @param {object} context - Additional information about the context of the error
      * @private
      */
     async _sendLogReport(error, errorId, context) {
         if (!this.client) {
-            return logger.guardian('error', "Guardian wurde nicht initialisiert. Konnte Fehlerbericht nicht senden.");
+            return logger.guardian('error', "Guardian was not initialized. Unable to send error report");
         }
 
         const { interaction, type } = context;
@@ -109,19 +109,19 @@ class Guardian {
         const errorLogChannelId = this.ERROR_LOG_CHANNEL_ID;
 
         if (!errorLogChannelId) {
-            return logger.guardian('warn', `Hardcodierte 'ERROR_LOG_CHANNEL_ID' fehlt oder ist nicht ersetzt. Überspringe Discord-Log.`);
+            return logger.guardian('warn', `The hardcoded ‘ERROR_LOG_CHANNEL_ID’ is missing or has not been replaced. Skip the Discord log`);
         }
 
         const logChannel = await this.client.channels.fetch(errorLogChannelId).catch(() => null);
         if (!logChannel) {
-            return logger.guardian('error', `Fehler-Log-Channel mit ID ${errorLogChannelId} nicht gefunden.`);
+            return logger.guardian('error', `Error log channel with ID ${errorLogChannelId} not found`);
         }
 
         const embed = new EmbedBuilder()
             .setColor(0xED4245)
             .setTitle(`🛡️ Guardian | ${type}`)
             .setTimestamp()
-            .setFooter({ text: `Fehler-ID: ${errorId}` });
+            .setFooter({ text: `Error-ID: ${errorId}` });
 
         let contentToSend = null;
 
@@ -132,42 +132,43 @@ class Guardian {
                 if (developerRole) {
                     contentToSend = `${developerRole}`;
                 } else {
-                    logger.guardian('warn', `Developer Ping Rolle mit ID ${developerPingRoleId} auf dem Server nicht gefunden.`);
+                    logger.guardian('warn', `The Developer Ping role with ID ${developerPingRoleId} was not found on the server`);
                 }
             } else {
-                logger.guardian('warn', `Hardcodierte 'DEVELOPER_PING_ROLE_ID' fehlt oder ist nicht ersetzt.`);
+                logger.guardian('warn', `The hard-coded ‘DEVELOPER_PING_ROLE_ID’ is missing or has not been replaced`);
             }
 
             embed.addFields(
-                { name: "Ausgelöst von", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                { name: "Triggered by", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
                 { name: "Server", value: `\`${interaction.guild.name}\``, inline: true },
-                { name: "Befehl", value: interaction.isCommand() ? `\`/${interaction.commandName}\`` : "`N/A`", inline: true },
+                { name: "Command", value: interaction.isCommand() ? `\`/${interaction.commandName}\`` : "`N/A`", inline: true },
             );
         } else {
-            embed.addFields({ name: "Kontext", value: "`Globaler Prozess`", inline: true });
+            embed.addFields({ name: "Context", value: "`Global Process`", inline: true });
         }
 
 
         const location = this._parseStackForLocation(error);
         if (location) {
             embed.addFields(
-                { name: "📍 Fehlerort", value: `\`\`\`ini\n[Datei]: ${location.fileName}\n[Zeile]: ${location.line}\`\`\`` },
-                { name: "Pfad", value: `\`${location.filePath}\``}
+                { name: "📍 Location", value: `\`\`\`ini\n[File]: ${location.fileName}\n[Row]: ${location.line}\`\`\`` },
+                { name: "Path", value: `\`${location.filePath}\``}
             );
         }
 
         const stackTrace = error.stack || error.toString();
         embed.addFields(
-            { name: "Fehlermeldung", value: `\`\`\`${error.message}\`\`\`` },
+            { name: "Error Message", value: `\`\`\`${error.message}\`\`\`` },
             { name: "Stack Trace", value: `\`\`\`js\n${stackTrace.substring(0, 1000)}\`\`\`` }
         );
 
         await logChannel.send({ content: contentToSend, embeds: [embed] });
     }
+
     /**
-     * @param {string} errorMessage - Eine klare, für Entwickler verständliche Fehlermeldung.
-     * @param {import('discord.js').Interaction} interaction - Die Interaktion, bei der der Fehler auftrat.
-     * @param {string} type - Eine optionale, spezifische Art des Fehlers.
+     * @param {string} errorMessage - A clear error message that developers can understand
+     * @param {import('discord.js').Interaction} interaction - The interaction during which the error occurred
+     * @param {string} type - An optional, specific type of error
      */
     async handleCommand(errorMessage, interaction, type = 'Command Logic Error') {
         const error = new Error(errorMessage);
@@ -175,8 +176,8 @@ class Guardian {
     }
 
     /**
-     * @param {string} errorMessage - Eine klare, für Entwickler verständliche Fehlermeldung.
-     * @param {{guild?: import('discord.js').Guild, eventName?: string}} context - Optionale Kontext-Objekte aus dem Event (z.B. der Server).
+     * @param {string} errorMessage - A clear error message that developers can understand
+     * @param {{guild?: import('discord.js').Guild, eventName?: string}} context - Optional context objects from the event (e.g., the server)
      */
     async handleEvent(errorMessage, context = {}) {
         const error = new Error(errorMessage);
@@ -185,9 +186,9 @@ class Guardian {
     }
 
     /**
-     * @param {string} errorMessage - Eine klare, für Entwickler verständliche Fehlermeldung.
-     * @param {string} type - Ein benutzerdefinierter Typ für den Fehler (z.B. "Service Initialization").
-     * @param {string} [stack] - **Optional:** Der `error.stack` des ursprünglichen Fehlers.
+     * @param {string} errorMessage - A clear error message that developers can understand
+     * @param {string} type - A custom type for the error (e.g., “Service Initialization”)
+     * @param {string} [stack] - **Optional:** The `error.stack` of the original error
      */
     async handleGeneric(errorMessage, type = 'Generic System Error', stack = null) {
         const error = new Error(errorMessage);
@@ -198,24 +199,24 @@ class Guardian {
     }
 
     /**
-     * Hauptmethode zur Behandlung eines Fehlers.
-     * @param {Error} error - Das aufgetretene Fehlerobjekt.
-     * @param {import('discord.js').Interaction | null} interaction - Die Interaktion, bei der der Fehler auftrat.
-     * @param {string} type - Die Art des Fehlers (z.B. "Command Execution").
+     * The primary method for correcting an error
+     * @param {Error} error - The error object that occurred
+     * @param {import('discord.js').Interaction | null} interaction - The interaction during which the error occurred
+     * @param {string} type - The type of error (e.g., “Command Execution”)
      */
-    async report(error, interaction, type = "Unbekannter Fehler") {
+    async report(error, interaction, type = "Unknown Error") {
         const errorId = this.generateErrorId();
         const context = {
             interaction,
             type,
         };
 
-        logger.guardian('error', `Fehler erfasst [ID: ${errorId}] | Typ: ${type}:`, error);
+        logger.guardian('error', `Error detected [ID: ${errorId}] | Type: ${type}:`, error);
 
         const location = this._parseStackForLocation(error);
 
         if (location) {
-            logger.guardian('error', `📍 Fehlerort: ${location.fileName} (Zeile: ${location.line}) | Pfad: ${location.filePath}`);
+            logger.guardian('error', `📍 Error location: ${location.fileName} (line: ${location.line}) | Path: ${location.filePath}`);
         }
 
         await this._sendLogReport(error, errorId, context);
