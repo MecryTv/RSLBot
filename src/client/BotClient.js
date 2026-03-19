@@ -1,7 +1,7 @@
 const {Client, Collection, GatewayIntentBits, REST, Routes} = require("discord.js");
 const fs = require("fs");
 const path = require("path");
-const { BOT } = require("../../config.json")
+const { BOT, DATABASE } = require("../../config.json")
 const logger = require("../utils/logger");
 const ConfigService = require("../services/ConfigService");
 const MessageService = require("../services/MessageService");
@@ -10,6 +10,7 @@ const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
 const ModelService = require("../services/ModelService");
 const TaskService = require("../services/TaskService");
+const mongoose = require("mongoose");
 
 class BotClient extends Client {
     constructor() {
@@ -123,6 +124,15 @@ class BotClient extends Client {
         Guardian.initialize(this);
 
         try {
+            const baseConnection = await mongoose.createConnection(DATABASE.URI).asPromise();
+            this.discordDB = baseConnection.useDb(DATABASE.DB_DISCORD);
+            this.websiteDB = baseConnection.useDb(DATABASE.DB_WEBSITE);
+            logger.info("✅  MongoDB Cluster connected (Discord & Website DBs ready)");
+        } catch (err) {
+            console.error("Datenbank-Fehler beim Start:", err);
+        }
+
+        try {
             await this.loadAndRegisterCommands();
             await this.loadEvents();
             await this.taskService.init();
@@ -132,7 +142,6 @@ class BotClient extends Client {
             logger.info(`💬  ${MessageService.getMessageCount()} Message files loaded`);
             logger.info(`🖼️ ${MediaService.getMediaCount()} Media files loaded`);
             logger.info(`😃  ${EmojiService.getEmojiCount()} Emojis loaded`);
-            logger.info(`📜  ${this.taskService.length} ScheduledTasks loaded`);
 
             await this.login(token);
         } catch (error) {
