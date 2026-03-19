@@ -30,4 +30,21 @@ class RLAPIService {
             throw new Error(`Failed to resolve user "${epicName}". Please check the logs for more details.`);
         }
     }
+    async getAuthInfo() {
+        try {
+            const response = await this.client.post('/Authorizations/GetAuthorizationInfo', {});
+
+            const fullData = response.data;
+
+            if (!fullData || !fullData.Result) {
+                logger.error(`[RLAPIService] Critical API Error: Invalid response structure when fetching authorization info. Response: ${JSON.stringify(fullData)}`);
+                throw new Error('Invalid response from RLAPI when fetching authorization info. Please check the logs for more details.');
+            }
+
+            return fullData.Result;
+        } catch (error) {
+            logger.error('[RLAPIService] Critical API Error: Failed to fetch authorization info.', error);
+            throw new Error('Failed to fetch authorization info. Please check the logs for more details.');
+        }
+    }
 }
