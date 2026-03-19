@@ -43,3 +43,5 @@ function ComponentV2Container(titleContent, textContent, thumbnailImageURL, medi
 
     return container;
 }
+
+module.exports = ComponentV2Container;
