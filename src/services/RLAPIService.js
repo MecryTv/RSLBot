@@ -48,3 +48,5 @@ class RLAPIService {
         }
     }
 }
+
+module.exports = RLAPIService;
