@@ -39,6 +39,9 @@ class TaskService {
             }
         }
 
+        // Fix: Wir nutzen hier die lokale Variable "files", damit die Zahl stimmt
+        logger.info(`📜 ${files.length} ScheduledTasks loaded`);
+
         setInterval(() => this.checkTasks(), 30000);
     }
 
@@ -48,7 +51,14 @@ class TaskService {
         const dueTasks = await TaskModel.find({ nextRun: { $lte: now }, enabled: true });
 
         for (const taskData of dueTasks) {
-            const runnable = require(`../runnables/${taskData.name}.js`);
+            // Suche den bereits geladenen Task im Cache
+            const runnable = this.client.loadedTasks.find(t => t.name === taskData.name);
+
+            if (!runnable) {
+                logger.error(`[TaskService] Task "${taskData.name}" gefunden, aber das File im runnable-Ordner fehlt!`);
+                continue;
+            }
+
             try {
                 await runnable.execute(this.client);
 
@@ -58,14 +68,38 @@ class TaskService {
                     const nextDate = this.calculateNextRun(taskData.type, taskData.expression);
                     await TaskModel.updateOne({ _id: taskData._id }, { nextRun: nextDate, lastRun: now });
                 }
-            } catch (e) { logger.error(`Run-Error (${taskData.name}): ${e.message}`); }
+            } catch (e) {
+                logger.error(`Run-Error (${taskData.name}): ${e.message}`);
+            }
         }
     }
 
     calculateNextRun(type, expression) {
-        if (type === 'CRON') return cronParser.parseExpression(expression).next().toDate();
-        if (type === 'INTERVAL') return new Date(Date.now() + ms(expression));
-        if (type === 'ONCE') return new Date(expression);
+        try {
+            if (type === 'CRON') {
+                // FALLBACK LOGIK basierend auf deinem Debug-Log
+                let parser;
+
+                if (typeof cronParser.parseExpression === 'function') {
+                    parser = cronParser.parseExpression(expression);
+                } else if (cronParser.default && typeof cronParser.default.parseExpression === 'function') {
+                    parser = cronParser.default.parseExpression(expression);
+                } else if (cronParser.CronExpressionParser) {
+                    // Das hier wird laut deinem Log wahrscheinlich funktionieren:
+                    parser = cronParser.CronExpressionParser.parse(expression);
+                } else {
+                    throw new Error("Keine gültige Parse-Methode in cron-parser gefunden.");
+                }
+
+                return parser.next().toDate();
+            }
+            if (type === 'INTERVAL') return new Date(Date.now() + ms(expression));
+            if (type === 'ONCE') return new Date(expression);
+        } catch (error) {
+            logger.error(`[TaskService] Invalid expression (${expression}): ${error.message}`);
+        }
         return new Date();
     }
 }
+
+module.exports = TaskService;

@@ -7,38 +7,33 @@ const {
     SectionBuilder
 } = require("discord.js");
 
-function ComponentV2Container(titleContent, textContent, thumbnailImageURL, mediaGalleryItems = []) {
+function ComponentV2Container(titleContent, textContent, mediaImageURL) {
     const title = new TextDisplayBuilder().setContent(titleContent);
     const text = new TextDisplayBuilder().setContent(textContent);
-    const thumbnail = new ThumbnailBuilder().setURL(thumbnailImageURL);
 
-    const separator1 = new SeparatorBuilder();
-    const separator2 = new SeparatorBuilder();
+    const separator1 = new SeparatorBuilder().setDivider(true);
+    const separator2 = new SeparatorBuilder().setDivider(true);
+
     const spacer = new TextDisplayBuilder().setContent('\u200B');
-
-    const section = new SectionBuilder()
-        .addTextDisplayComponents(text)
-        .setThumbnailAccessory(thumbnail);
 
     const container = new ContainerBuilder()
         .addTextDisplayComponents(title)
         .addSeparatorComponents(separator1)
         .addTextDisplayComponents(spacer)
-        .addSectionComponents(section);
+        .addTextDisplayComponents(text);
 
-    if (mediaGalleryItems && mediaGalleryItems.length > 0) {
-        const mediaGallery = new MediaGalleryBuilder();
-
-        const formattedItems = mediaGalleryItems.map(url => ({
-            media: {
-                url: url
-            }
-        }));
-
-        mediaGallery.addItems(formattedItems);
+    if (mediaImageURL && mediaImageURL.trim() !== "") {
+        const mediaImage = new MediaGalleryBuilder()
+            .addItems([
+                {
+                    media: {
+                        url: mediaImageURL,
+                    }
+                }
+            ]);
 
         container.addSeparatorComponents(separator2);
-        container.addMediaGalleryComponents(mediaGallery);
+        container.addMediaGalleryComponents(mediaImage);
     }
 
     return container;
