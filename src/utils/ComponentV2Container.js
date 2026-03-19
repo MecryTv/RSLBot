@@ -2,9 +2,7 @@ const {
     ContainerBuilder,
     TextDisplayBuilder,
     SeparatorBuilder,
-    MediaGalleryBuilder,
-    ThumbnailBuilder,
-    SectionBuilder
+    MediaGalleryBuilder
 } = require("discord.js");
 
 function ComponentV2Container(titleContent, textContent, mediaImageURL) {
