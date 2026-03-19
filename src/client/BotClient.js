@@ -9,6 +9,7 @@ const MediaService = require("../services/MediaService");
 const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
 const ModelService = require("../services/ModelService");
+const TaskService = require("../services/TaskService");
 
 class BotClient extends Client {
     constructor() {
@@ -34,6 +35,7 @@ class BotClient extends Client {
         });
 
         this.commands = new Collection();
+        this.taskService = new TaskService(this);
     }
 
     async loadAndRegisterCommands() {
@@ -123,12 +125,14 @@ class BotClient extends Client {
         try {
             await this.loadAndRegisterCommands();
             await this.loadEvents();
+            await this.taskService.init();
 
             logger.info(`💾  ${ModelService.getModelCount()} Models loaded`);
             logger.info(`⚙️  ${ConfigService.getConfigCount()} Configurations loaded`);
             logger.info(`💬  ${MessageService.getMessageCount()} Message files loaded`);
             logger.info(`🖼️ ${MediaService.getMediaCount()} Media files loaded`);
             logger.info(`😃  ${EmojiService.getEmojiCount()} Emojis loaded`);
+            logger.info(`📜  ${this.taskService.length} ScheduledTasks loaded`);
 
             await this.login(token);
         } catch (error) {
