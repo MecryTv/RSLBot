@@ -13,12 +13,10 @@ function ComponentV2Container(titleContent, textContent, options = {}) {
     const text = new TextDisplayBuilder().setContent(textContent);
     const separator1 = new SeparatorBuilder().setDivider(true);
     const separator2 = new SeparatorBuilder().setDivider(true);
-    const spacer = new TextDisplayBuilder().setContent('\u200B');
 
     const container = new ContainerBuilder()
         .addTextDisplayComponents(title)
-        .addSeparatorComponents(separator1)
-        .addTextDisplayComponents(spacer);
+        .addSeparatorComponents(separator1);
 
     if (thumbnailURL) {
         const section = new SectionBuilder()
