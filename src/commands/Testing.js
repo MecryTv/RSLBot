@@ -37,7 +37,9 @@ class Testing extends Command {
           const container2 = ComponentV2Container(
               "TESTING CONTENT",
               "TESTING CONTENT",
-              { thumbnailURL: avatar512 }
+              {
+                  thumbnailURL: avatar512
+              }
           );
 
           await interaction.reply({
