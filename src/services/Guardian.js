@@ -123,22 +123,11 @@ class Guardian {
             .setTimestamp()
             .setFooter({ text: `Error-ID: ${errorId}` });
 
-        let contentToSend = null;
+        const contentToSend = this.DEVELOPER_PING_ROLE_ID ? `<@&${this.DEVELOPER_PING_ROLE_ID}>` : null;
+        if (!contentToSend) logger.guardian('warn', 'DEVELOPER_PING_ROLE_ID missing');
 
         if (interaction) {
-            const developerPingRoleId = this.DEVELOPER_PING_ROLE_ID;
-            if (developerPingRoleId) {
-                const developerRole = await interaction.guild.roles.fetch(developerPingRoleId).catch(() => null);
-                if (developerRole) {
-                    contentToSend = `${developerRole}`;
-                } else {
-                    logger.guardian('warn', `The Developer Ping role with ID ${developerPingRoleId} was not found on the server`);
-                }
-            } else {
-                logger.guardian('warn', `The hard-coded ‘DEVELOPER_PING_ROLE_ID’ is missing or has not been replaced`);
-            }
-
-            embed.addFields(
+           embed.addFields(
                 { name: "Triggered by", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
                 { name: "Server", value: `\`${interaction.guild.name}\``, inline: true },
                 { name: "Command", value: interaction.isCommand() ? `\`/${interaction.commandName}\`` : "`N/A`", inline: true },
