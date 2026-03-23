@@ -1,7 +1,7 @@
 const ComponentV2Container = require('../utils/ComponentV2Container');
 const RLAPIService = require('../services/RLAPIService');
-const logger = require('../utils/logger');
-const { MessageFlags } = require('discord.js');
+const MediaService = require('../services/MediaService');
+const Guardian = require('../services/Guardian');
 
 module.exports = {
     name: "DailyAPIAuthCheck",
@@ -31,6 +31,9 @@ module.exports = {
                 timeWarning = `Deine Lizenz ist noch **${diffDays} Tage und ${diffHours} Stunden** gültig.`;
             }
 
+            const thumbnailURL = MediaService.getAttachmentURL("clock.png");
+            const clockFile = MediaService.getAttachment("clock.png");
+
             const text = `Hallo! Hier ist dein täglicher Statusbericht für die Rocket League API.\n\n` +
                 `📅 **Ablaufdatum:** ${expiresAt.toLocaleDateString('de-DE')} um ${expiresAt.toLocaleTimeString('de-DE')} Uhr\n` +
                 `⏳ **Status:** ${timeWarning}\n` +
@@ -39,27 +42,29 @@ module.exports = {
                 `👉 **[Über PayPal verlängern](https://paypal.me/stevp)**\n\n` +
                 `*Bitte beachte, dass die Bearbeitung der Zahlung bis zu 24h dauern kann.*`;
 
-            const authContainer = ComponentV2Container(title, text, null);
+            const authContainer = ComponentV2Container(title, text, { thumbnailURL: thumbnailURL });
             const user = await client.users.fetch(mecryID);
 
             if (user) {
                 try {
                     await user.send({
                         flags: 32768,
-                        components: [authContainer.toJSON()]
+                        components: [authContainer.toJSON()],
+                        files: [clockFile]
                     });
                 } catch (djsError) {
                     const dmChannel = await user.createDM();
                     await client.rest.post(`/channels/${dmChannel.id}/messages`, {
                         body: {
                             flags: 32768,
-                            components: [authContainer.toJSON()]
+                            components: [authContainer.toJSON()],
+                            files: [clockFile]
                         }
                     });
                 }
             }
         } catch (error) {
-            logger.error("[DailyAPIAuthCheck] Fehler beim Ausführen des Tasks:", error);
+            await Guardian.handleGeneric(`Fehler im DailyAPIAuthCheck Task: ${error.message}`, "AUTO MESSAGE", error.stack);
         }
     }
 }
