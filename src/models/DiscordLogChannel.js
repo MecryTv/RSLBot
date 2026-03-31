@@ -17,12 +17,15 @@ module.exports = (client) => {
     const validLogTypes = Object.values(LogChannelTypes).map(type => type.id);
 
     const schema = new Schema({
+        guildId: { type: String, required: true },
         name: { type: String, required: true },
-        logType: { type: String, enum: validLogTypes, required: true, unique: true },
+        logType: { type: String, enum: validLogTypes, required: true },
         channelId: { type: String, required: true },
     }, {
         timestamps: true,
         versionKey: false
     });
+    schema.index({ guildId: 1, logType: 1 }, { unique: true });
+
     return db.models[modelName] || db.model(modelName, schema);
 };
