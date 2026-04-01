@@ -127,14 +127,10 @@ class BotClient extends Client {
             const baseConnection = await mongoose.createConnection(DATABASE.URI).asPromise();
             this.discordDB = baseConnection.useDb(DATABASE.DB_DISCORD);
             this.websiteDB = baseConnection.useDb(DATABASE.DB_WEBSITE);
-            logger.info("✅  MongoDB Cluster connected (Discord & Website DBs ready)");
-        } catch (err) {
-            console.error("Datenbank-Fehler beim Start:", err);
-        }
+            logger.info("✅  MongoDB connected");
 
-        try {
-            await this.loadAndRegisterCommands();
             await this.loadEvents();
+            await this.loadAndRegisterCommands();
             await this.taskService.init();
 
             logger.info(`💾  ${ModelService.getModelCount()} Models loaded`);
@@ -144,8 +140,11 @@ class BotClient extends Client {
             logger.info(`😃  ${EmojiService.getEmojiCount()} Emojis loaded`);
 
             await this.login(token);
+
         } catch (error) {
-            await Guardian.handleGeneric(`A critical error occurred while the bot was starting: ${error.message}`, "Critical Startup Error");
+            logger.error("Startup Failure:", error);
+            if (Guardian) await Guardian.handleGeneric(error.message, "Critical Startup Error", error.stack);
+            process.exit(1);
         }
     }
 }
