@@ -10,7 +10,7 @@ const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
 const ModelService = require("../services/ModelService");
 const TaskService = require("../services/TaskService");
-const mongoose = require("mongoose");
+const RedisService = require("../services/RedisService");
 
 class BotClient extends Client {
     constructor() {
@@ -37,6 +37,7 @@ class BotClient extends Client {
 
         this.commands = new Collection();
         this.taskService = new TaskService(this);
+        this.database = RedisService;
     }
 
     async loadAndRegisterCommands() {
@@ -124,16 +125,17 @@ class BotClient extends Client {
         Guardian.initialize(this);
 
         try {
-            const baseConnection = await mongoose.createConnection(DATABASE.URI).asPromise();
-            this.discordDB = baseConnection.useDb(DATABASE.DB_DISCORD);
-            this.websiteDB = baseConnection.useDb(DATABASE.DB_WEBSITE);
-            logger.info("✅  MongoDB connected");
+            await this.db.connect();
+            logger.info("✅  Redis connected");
+
+            const modelsPath = path.join(__dirname, "../models");
+            await this.db.loadModels(modelsPath);
 
             await this.loadEvents();
             await this.loadAndRegisterCommands();
             await this.taskService.init();
 
-            logger.info(`💾  ${ModelService.getModelCount()} Models loaded`);
+            logger.info(`💾  ${this.database.getModelCount()} Models loaded`);
             logger.info(`⚙️  ${ConfigService.getConfigCount()} Configurations loaded`);
             logger.info(`💬  ${MessageService.getMessageCount()} Message files loaded`);
             logger.info(`🖼️ ${MediaService.getMediaCount()} Media files loaded`);
