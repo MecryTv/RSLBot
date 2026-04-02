@@ -11,10 +11,9 @@ class TaskService {
     }
 
     async init() {
-        const TaskModel = require('../models/ScheduledTask')(this.client);
         const runnablePath = path.join(__dirname, '../runnables');
 
-        if (!fs.existsSync(runnablePath)) fs.mkdirSync(runnablePath);
+        if (!fs.existsSync(runnablePath)) fs.mkdirSync(runnablePath, { recursive: true });
 
         const files = fs.readdirSync(runnablePath).filter(f => f.endsWith('.js'));
 
@@ -23,15 +22,18 @@ class TaskService {
                 const runnable = require(path.join(runnablePath, file));
                 this.client.loadedTasks.push(runnable);
 
-                let task = await TaskModel.findOne({ name: runnable.name });
+                let task = await this.client.database.findOne('ScheduledTask', { name: runnable.name });
                 const next = this.calculateNextRun(runnable.type, runnable.expression);
 
                 if (!task) {
-                    await TaskModel.create({
+                    await this.client.database.save('ScheduledTask', {
                         name: runnable.name,
                         type: runnable.type,
                         expression: runnable.expression,
-                        nextRun: next
+                        nextRun: next,
+                        enabled: true,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
                     });
                 }
             } catch (err) {
@@ -39,58 +41,64 @@ class TaskService {
             }
         }
 
-        // Fix: Wir nutzen hier die lokale Variable "files", damit die Zahl stimmt
-        logger.info(`📜 ${files.length} ScheduledTasks loaded`);
+        logger.info(`📜 ${files.length} ScheduledTasks loaded into Memory & DB`);
 
         setInterval(() => this.checkTasks(), 30000);
     }
 
     async checkTasks() {
-        const TaskModel = require('../models/ScheduledTask')(this.client);
         const now = new Date();
-        const dueTasks = await TaskModel.find({ nextRun: { $lte: now }, enabled: true });
 
-        for (const taskData of dueTasks) {
-            // Suche den bereits geladenen Task im Cache
-            const runnable = this.client.loadedTasks.find(t => t.name === taskData.name);
+        try {
+            const repo = this.client.database.repositories.get('ScheduledTask');
 
-            if (!runnable) {
-                logger.error(`[TaskService] Task "${taskData.name}" gefunden, aber das File im runnable-Ordner fehlt!`);
-                continue;
-            }
+            const dueTasks = await repo.search()
+                .where('nextRun').lessThanOrEqualTo(now)
+                .and('enabled').true()
+                .return.all();
 
-            try {
-                await runnable.execute(this.client);
+            for (const taskData of dueTasks) {
+                const runnable = this.client.loadedTasks.find(t => t.name === taskData.name);
 
-                if (taskData.type === 'ONCE') {
-                    await TaskModel.updateOne({ _id: taskData._id }, { enabled: false, lastRun: now });
-                } else {
-                    const nextDate = this.calculateNextRun(taskData.type, taskData.expression);
-                    await TaskModel.updateOne({ _id: taskData._id }, { nextRun: nextDate, lastRun: now });
+                if (!runnable) {
+                    logger.error(`[TaskService] Task "${taskData.name}" gefunden, aber das File im runnable-Ordner fehlt!`);
+                    continue;
                 }
-            } catch (e) {
-                logger.error(`Run-Error (${taskData.name}): ${e.message}`);
+
+                try {
+                    await runnable.execute(this.client);
+
+                    if (taskData.type === 'ONCE') {
+                        taskData.enabled = false;
+                    } else {
+                        taskData.nextRun = this.calculateNextRun(taskData.type, taskData.expression);
+                    }
+
+                    taskData.lastRun = now;
+                    taskData.updatedAt = now;
+
+                    await this.client.database.save('ScheduledTask', taskData);
+
+                } catch (e) {
+                    logger.error(`Run-Error (${taskData.name}): ${e.message}`);
+                }
             }
+        } catch (err) {
+            logger.error(`[TaskService] Error during checkTasks: ${err.message}`);
         }
     }
 
     calculateNextRun(type, expression) {
         try {
             if (type === 'CRON') {
-                // FALLBACK LOGIK basierend auf deinem Debug-Log
                 let parser;
-
                 if (typeof cronParser.parseExpression === 'function') {
                     parser = cronParser.parseExpression(expression);
                 } else if (cronParser.default && typeof cronParser.default.parseExpression === 'function') {
                     parser = cronParser.default.parseExpression(expression);
-                } else if (cronParser.CronExpressionParser) {
-                    // Das hier wird laut deinem Log wahrscheinlich funktionieren:
-                    parser = cronParser.CronExpressionParser.parse(expression);
                 } else {
-                    throw new Error("Keine gültige Parse-Methode in cron-parser gefunden.");
+                    parser = cronParser.CronExpressionParser.parse(expression);
                 }
-
                 return parser.next().toDate();
             }
             if (type === 'INTERVAL') return new Date(Date.now() + ms(expression));

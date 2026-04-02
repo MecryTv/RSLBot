@@ -1,31 +1,12 @@
-const { Schema } = require("mongoose");
-const LogChannelTypes = require("../enums/LogChannelTypes")
+const { Schema } = require("redis-om");
 
-/**
- * Model: DiscordLogChannel
- * Datenbank: discordDB (Auswahl: discordDB / websiteDB)
- */
+const DiscordLogChannel = new Schema("DiscordLogChannel", {
+    guildId: { type: 'string' },
+    name: { type: 'string' },
+    logType: { type: 'string' },
+    channelId: { type: 'string' }
+}, {
+    dataStructure: 'JSON'
+});
 
-module.exports = (client) => {
-    const db = client.discordDB;
-    const modelName = "DiscordLogChannel";
-
-    if (!db) {
-        throw new Error(`Database connection for discordDB not found in client`);
-    }
-
-    const validLogTypes = Object.values(LogChannelTypes).map(type => type.id);
-
-    const schema = new Schema({
-        guildId: { type: String, required: true },
-        name: { type: String, required: true },
-        logType: { type: String, enum: validLogTypes, required: true },
-        channelId: { type: String, required: true },
-    }, {
-        timestamps: true,
-        versionKey: false
-    });
-    schema.index({ guildId: 1, logType: 1 }, { unique: true });
-
-    return db.models[modelName] || db.model(modelName, schema);
-};
+module.exports = DiscordLogChannel;

@@ -1,28 +1,14 @@
-const { Schema } = require("mongoose");
+const { Schema } = require("redis-om");
 
-/**
- * Model: ScheduledTask
- * Datenbank: discordDB (Auswahl: discordDB / websiteDB)
- */
+const ScheduledTask = new Schema("ScheduledTask", {
+    name: { type: 'string' },
+    type: { type: 'string' },
+    expression: { type: 'string' },
+    nextRun: { type: 'date' },
+    lastRun: { type: 'date' },
+    enabled: { type: 'boolean' }
+}, {
+    dataStructure: 'JSON'
+});
 
-module.exports = (client) => {
-    const db = client.discordDB;
-    const modelName = "ScheduledTask";
-
-    if (!db) {
-        throw new Error(`Database connection for discordDB not found in client`);
-    }
-
-    const schema = new Schema({
-        name: { type: String, required: true, unique: true },
-        type: { type: String, enum: ['CRON', 'INTERVAL', 'ONCE'], required: true },
-        expression: { type: String, required: true },
-        nextRun: { type: Date, required: true },
-        lastRun: { type: Date },
-        enabled: { type: Boolean, default: true }
-    }, {
-        timestamps: true,
-        versionKey: false
-    });
-    return db.models[modelName] || db.model(modelName, schema);
-};
+module.exports = ScheduledTask;
