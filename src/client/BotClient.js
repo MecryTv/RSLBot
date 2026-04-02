@@ -125,11 +125,11 @@ class BotClient extends Client {
         Guardian.initialize(this);
 
         try {
-            await this.db.connect();
+            await this.database.connect();
             logger.info("✅  Redis connected");
 
             const modelsPath = path.join(__dirname, "../models");
-            await this.db.loadModels(modelsPath);
+            await this.database.loadModels(modelsPath);
 
             await this.loadEvents();
             await this.loadAndRegisterCommands();
