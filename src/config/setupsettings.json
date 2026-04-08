@@ -1,0 +1,69 @@
+[
+  {
+    "panigation": false,
+    "pages": [
+      {
+        "name": "Log Channel",
+        "description": "Log Channel Setup for the Server",
+        "value": "logchannel",
+        "emoji": "📁"
+      }
+    ],
+    "logchannel": [
+      {
+        "name": "Connection Logs",
+        "description": "Setup the channel for connection (Join/Leave) logs",
+        "value": "connectionlogs",
+        "emoji": "📁"
+      },
+      {
+          "name": "Moderation Logs",
+          "description": "Setup the channel for moderation logs (Ban/Kick/Mute/Unmute)",
+          "value": "moderationlogs",
+          "emoji": "📁"
+      },
+      {
+          "name": "Message Logs",
+          "description": "Setup the channel for message logs (Message Delete/Edit)",
+          "value": "messagelogs",
+          "emoji": "📁"
+      },
+      {
+          "name": "Voice Logs",
+          "description": "Setup the channel for voice logs (Voice Join/Leave/Mute/Deaf)",
+          "value": "voicelogs",
+          "emoji": "📁"
+      },
+      {
+          "name": "Role Logs",
+          "description": "Setup the channel for role logs (Role Create/Delete/Update)",
+          "value": "rolelogs",
+          "emoji": "📁"
+      },
+      {
+          "name": "Channel Logs",
+          "description": "Setup the channel for channel logs (Channel Create/Delete/Update)",
+          "value": "channellogs",
+          "emoji": "📁"
+      },
+      {
+        "name": "Role Logs",
+        "description": "Setup the channel for role logs (Role Create/Delete/Update)",
+        "value": "rolelogs",
+        "emoji": "📁"
+      },
+      {
+        "name": "Profile Logs",
+        "description": "Setup the channel for profile logs (Profile Update)",
+        "value": "profilelogs",
+        "emoji": "📁"
+      },
+      {
+        "name": "Audit Logs",
+        "description": "Setup the channel for audit logs (Audit Log Update)",
+        "value": "auditlogs",
+        "emoji": "📁"
+      }
+    ]
+  }
+]
