@@ -33,6 +33,13 @@ class SetupSettings extends Command {
             return interaction.editReply({ content: "The Messages for the Site didnt found" });
       }
 
+      const selectMenuId = MessageService.get("setupsettings.menuids.command");
+
+      if (!selectMenuId) {
+          await Guardian.handleCommand("The Menu ID for the Site didnt found", interaction, "Message Error");
+          return interaction.editReply({ content: "The Menu IDs for the Site didnt found" });
+      }
+
       const setupSettingsConfig = ConfigService.get("setupsettings");
       if (!setupSettingsConfig || !setupSettingsConfig[0] || !setupSettingsConfig[0].pages) {
           await Guardian.handleCommand("The Configurations for the Site didnt found", interaction, "Config Error");
@@ -44,7 +51,7 @@ class SetupSettings extends Command {
 
       const pages = setupSettingsConfig[0].pages;
       const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId("setup-settings-menu")
+          .setCustomId(selectMenuId)
           .setPlaceholder("📜 | Choose a Category")
           .addOptions(
               pages.map((page) =>
