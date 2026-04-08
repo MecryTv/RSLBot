@@ -9,6 +9,7 @@ const Permissions = require("../../enums/Permissions");
 const ComponentV2Container = require("../../utils/ComponentV2Container");
 const ConfigService = require("../../services/ConfigService");
 const Guardian = require("../../services/Guardian");
+const MessageService = require("../../services/MessageService");
 
 class SetupSettings extends Command {
   constructor() {
@@ -24,8 +25,13 @@ class SetupSettings extends Command {
   }
 
   async execute(interaction) {
-      const title = "Setup Settings";
-      const description = "Configure your bot settings here. More options will be added in the future.";
+      const title = MessageService.get("setupsettings.command.container.title");
+      const description = MessageService.get("setupsettings.command.container.description");
+
+      if (!title || !description) {
+            await Guardian.handleCommand("The Messages for the Site didnt found", interaction, "Message Error");
+            return interaction.editReply({ content: "The Messages for the Site didnt found" });
+      }
 
       const setupSettingsConfig = ConfigService.get("setupsettings");
       if (!setupSettingsConfig || !setupSettingsConfig[0] || !setupSettingsConfig[0].pages) {
