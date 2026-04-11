@@ -1,0 +1,12 @@
+{
+  "command": {
+    "container": {
+      "title": "Setup Settings",
+      "description": "Configure your bot settings here. More options will be added in the future"
+    }
+  },
+  "menuids": {
+    "command": "setup-settings-menu",
+    "logchannel": "setup-settings-logchannel-menu"
+  }
+}
