@@ -47,12 +47,6 @@
           "emoji": "📁"
       },
       {
-        "name": "Role Logs",
-        "description": "Setup the channel for role logs (Role Create/Delete/Update)",
-        "value": "rolelogs",
-        "emoji": "📁"
-      },
-      {
         "name": "Profile Logs",
         "description": "Setup the channel for profile logs (Profile Update)",
         "value": "profilelogs",
