@@ -71,6 +71,17 @@ class RedisService {
         if (!repo) throw new Error(`Model ${modelName} nicht gefunden.`);
         return await repo.search().return.all();
     }
+    async findMany(modelName, criteria = {}) {
+        const repo = this.repositories.get(modelName);
+        if (!repo) throw new Error(`Model ${modelName} not found`);
+
+        let search = repo.search();
+        for (const [key, value] of Object.entries(criteria)) {
+            search = search.where(key).equals(value);
+        }
+
+        return await search.return.all();
+    }
 }
 
 module.exports = new RedisService();
