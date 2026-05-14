@@ -8,7 +8,6 @@ const MessageService = require("../services/MessageService");
 const MediaService = require("../services/MediaService");
 const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
-const ModelService = require("../services/ModelService");
 const TaskService = require("../services/TaskService");
 const DatabaseService = require("../services/DatabaseService");
 
@@ -36,8 +35,8 @@ class BotClient extends Client {
         });
 
         this.commands = new Collection();
-        this.taskService = new TaskService(this);
         this.database = DatabaseService;
+        this.taskService = new TaskService(this);
     }
 
     async loadAndRegisterCommands() {
