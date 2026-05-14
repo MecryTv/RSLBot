@@ -1,14 +1,18 @@
-const { Schema } = require("redis-om");
+const { z } = require('zod');
 
-const ScheduledTask = new Schema("ScheduledTask", {
-    name: { type: 'string' },
-    type: { type: 'string' },
-    expression: { type: 'string' },
-    nextRun: { type: 'date' },
-    lastRun: { type: 'date' },
-    enabled: { type: 'boolean' }
-}, {
-    dataStructure: 'JSON'
-});
-
-module.exports = ScheduledTask;
+module.exports = {
+    name: 'ScheduledTask',
+    table: 'scheduled_tasks',
+    validate: z.object({
+        name: z.string(),
+        type: z.string(),
+        daily: z.boolean(),
+        time: z.string(),
+        date: z.string().nullable().optional(),
+        nextRun: z.date().nullable(),
+        lastRun: z.date().nullable(),
+        enabled: z.boolean().default(true),
+        isRunning: z.boolean().default(false),
+        lastError: z.string().nullable().optional()
+    })
+};
