@@ -1,12 +1,16 @@
-const { Schema } = require("redis-om");
+const { z } = require('zod');
+const LogChannelTypes = require('../enums/LogChannelTypes');
 
-const DiscordLogChannel = new Schema("DiscordLogChannel", {
-    guildId: { type: 'string' },
-    name: { type: 'string' },
-    logType: { type: 'string' },
-    channelId: { type: 'string' }
-}, {
-    dataStructure: 'JSON'
-});
+const validLogTypes = Object.values(LogChannelTypes).map(type => type.id);
 
-module.exports = DiscordLogChannel;
+module.exports = {
+    name: 'DiscordLogChannel',
+    table: 'discord_log_channels',
+
+    validate: z.object({
+        guildId: z.string().min(15),
+        name: z.string().max(100),
+        logType: z.enum(validLogTypes),
+        channelId: z.string().min(15)
+    })
+};

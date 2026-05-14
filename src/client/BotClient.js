@@ -10,7 +10,7 @@ const EmojiService = require("../services/EmojiService");
 const Guardian = require("../services/Guardian");
 const ModelService = require("../services/ModelService");
 const TaskService = require("../services/TaskService");
-const RedisService = require("../services/RedisService");
+const DatabaseService = require("../services/DatabaseService");
 
 class BotClient extends Client {
     constructor() {
@@ -37,7 +37,7 @@ class BotClient extends Client {
 
         this.commands = new Collection();
         this.taskService = new TaskService(this);
-        this.database = RedisService;
+        this.database = DatabaseService;
     }
 
     async loadAndRegisterCommands() {
@@ -126,10 +126,10 @@ class BotClient extends Client {
 
         try {
             await this.database.connect();
-            logger.info("✅  Redis connected");
 
             const modelsPath = path.join(__dirname, "../models");
             await this.database.loadModels(modelsPath);
+            logger.info(`💾  ${this.database.getModelCount()} Models registered`);
 
             await this.loadEvents();
             await this.loadAndRegisterCommands();
