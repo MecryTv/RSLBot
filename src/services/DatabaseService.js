@@ -30,7 +30,12 @@ class DatabaseService {
             const schema = partial ? model.validate.partial() : model.validate;
             return schema.parse(data);
         } catch (error) {
-            throw new Error(`Validation failed for ${model.name}: ${error.errors.map(e => e.path + " " + e.message).join(", ")}`);
+            if (error.errors && Array.isArray(error.errors)) {
+                const messages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(", ");
+                throw new Error(`Validation failed for ${model.name}: ${messages}`);
+            }
+
+            throw new Error(`Technical error during validation for ${model.name}: ${error.message}`);
         }
     }
 
