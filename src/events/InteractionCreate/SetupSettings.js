@@ -21,7 +21,6 @@ class SetupSettings extends Event {
     const logChannelCustomId = MessageService.get("setupsettings.menuids.logchannel");
 
     if (interaction.isStringSelectMenu()) {
-
       if (interaction.customId === commandCustomId) {
         const selectedOption = interaction.values[0];
         if (selectedOption === "logchannel") {
@@ -62,17 +61,18 @@ class SetupSettings extends Event {
       const channelName = interaction.channels.first()?.name || "Unknown Thread";
 
       try {
-        await interaction.client.database.save("DiscordLogChannel", {
+        const uniqueId = `${interaction.guildId}-${logType}`;
+
+        await interaction.client.database.save("DiscordLogChannel", uniqueId, {
           guildId: interaction.guildId,
           logType: logType,
           channelId: channelId,
-          name: channelName,
-          updatedAt: new Date()
+          name: channelName
         });
 
         return await this.sendOverview(interaction, logChannelCustomId);
       } catch (error) {
-        console.error("Redis Save Error:", error);
+        console.error("Database Save Error:", error);
         return Guardian.handleEvent("Error while Saving in Database", interaction);
       }
     }
@@ -96,7 +96,7 @@ class SetupSettings extends Event {
       const statusList = logOptions.map(option => {
         const setChannelId = activeMap.get(option.value);
         const statusEmoji = setChannelId ? "✅" : "❌";
-        const channelInfo = setChannelId ? `→ <#${setChannelId}>` : "*Not Configuratet*";
+        const channelInfo = setChannelId ? `→ <#${setChannelId}>` : "*Not Configured*";
         return `${statusEmoji} **${option.name}**\n╰ ${channelInfo}`;
       }).join("\n\n");
 
