@@ -10,7 +10,7 @@ module.exports = {
         time: z.string(),
         date: z.string().nullable().optional(),
         nextRun: z.date().nullable(),
-        lastRun: z.date().nullable(),
+        lastRun: z.date().nullable().optional(),
         enabled: z.boolean().default(true),
         isRunning: z.boolean().default(false),
         lastError: z.string().nullable().optional()
