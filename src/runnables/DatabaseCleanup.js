@@ -1,10 +1,10 @@
 const logger = require('../utils/logger');
 const Guardian = require('../services/Guardian');
+const TaskTypes = require('../enums/TaskTypes');
 
 module.exports = {
     name: "DatabaseCleanup",
-    type: "runnable",
-    daily: true,
+    type: TaskTypes.DAILY,
     time: "03:00",
 
     async execute(client) {
