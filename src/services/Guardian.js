@@ -5,31 +5,53 @@ const path = require("path");
 class Guardian {
     constructor() {
         this.client = null;
-        this.ERROR_LOG_CHANNEL_ID = '1163164124683964507';
-        this.DEVELOPER_PING_ROLE_ID = '1286386691925344390';
     }
 
-    /**
-     * @returns {string} The error ID in the format RSL-TIMESTAMP-RANDOM.
-     */
+    async getServiceIDs(guildId) {
+        const serviceIDs = [];
+
+        const errorLogChannel = await this.client.database.findOne("DiscordLogChannel", {
+            guildId: guildId,
+            logType: "errorLogs"
+        });
+
+        if (errorLogChannel) {
+            serviceIDs.push({
+                name: "ErrorLogChannel",
+                id: errorLogChannel.channelId
+            });
+        }
+
+        const allTeamRoles = await this.client.database.findMany("TeamRoles", {
+            guildId: guildId
+        });
+
+        const devRegex = /dev|entwickl/i;
+
+        const developerRole = allTeamRoles.find(role => devRegex.test(role.roleName));
+
+        if (developerRole) {
+            serviceIDs.push({
+                name: "DeveloperPingRole",
+                id: developerRole.roleId
+            });
+        }
+
+        return serviceIDs;
+    }
+
     generateErrorId() {
         const timestamp = Math.floor(Date.now() / 1000);
         const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
         return `RSL-${timestamp}-${randomPart}`;
     }
 
-    /**
-     * @param {import('discord.js').Client} client - The Discord client instance.
-     */
     initialize(client) {
         this.client = client;
         this._initializeGlobalHandlers();
         logger.guardian('info', "✅  Guardian is operational");
     }
 
-    /**
-     * @private
-     */
     _initializeGlobalHandlers() {
         process.on('unhandledRejection', (reason, promise) => {
             logger.guardian('error', 'Unhandled Rejection erfasst:', reason);
@@ -43,11 +65,6 @@ class Guardian {
         });
     }
 
-    /**
-     * @param {import('discord.js').Interaction} interaction - The interaction to which a response is required
-     * @param {string} errorId - The generated error ID
-     * @private
-     */
     async _sendUserReply(interaction, errorId) {
         if (!interaction || !interaction.channel || !interaction.isCommand()) return;
 
@@ -67,11 +84,6 @@ class Guardian {
         }
     }
 
-    /**
-     * @param {Error} error - The error object
-     * @returns {{fileName: string, filePath: string, line: string} | null} - An object containing the location details, or null.
-     * @private
-     */
     _parseStackForLocation(error) {
         if (!error.stack) return null;
 
@@ -93,12 +105,6 @@ class Guardian {
         return { fileName, filePath, line };
     }
 
-    /**
-     * @param {Error} error - The error object
-     * @param {string} errorId - The generated error ID
-     * @param {object} context - Additional information about the context of the error
-     * @private
-     */
     async _sendLogReport(error, errorId, context) {
         if (!this.client) {
             return logger.guardian('error', "Guardian was not initialized. Unable to send error report");
@@ -106,7 +112,10 @@ class Guardian {
 
         const { interaction, type } = context;
 
-        const errorLogChannelId = this.ERROR_LOG_CHANNEL_ID;
+        const serviceIDs = await this.getServiceIDs(interaction?.guildId);
+
+        const errorLogChannelId = serviceIDs.find(id => id.name === "ErrorLogChannel")?.id;
+        const developerPingRoleId = serviceIDs.find(id => id.name === "DeveloperPingRole")?.id;
 
         if (!errorLogChannelId) {
             return logger.guardian('warn', `The hardcoded ‘ERROR_LOG_CHANNEL_ID’ is missing or has not been replaced. Skip the Discord log`);
@@ -123,7 +132,7 @@ class Guardian {
             .setTimestamp()
             .setFooter({ text: `Error-ID: ${errorId}` });
 
-        const contentToSend = this.DEVELOPER_PING_ROLE_ID ? `<@&${this.DEVELOPER_PING_ROLE_ID}>` : null;
+        const contentToSend = developerPingRoleId ? `<@&${developerPingRoleId}>` : null;
         if (!contentToSend) logger.guardian('warn', 'DEVELOPER_PING_ROLE_ID missing');
 
         if (interaction) {
@@ -154,31 +163,17 @@ class Guardian {
         await logChannel.send({ content: contentToSend, embeds: [embed] });
     }
 
-    /**
-     * @param {string} errorMessage - A clear error message that developers can understand
-     * @param {import('discord.js').Interaction} interaction - The interaction during which the error occurred
-     * @param {string} type - An optional, specific type of error
-     */
     async handleCommand(errorMessage, interaction, type = 'Command Logic Error') {
         const error = new Error(errorMessage);
         await this.report(error, interaction, type);
     }
 
-    /**
-     * @param {string} errorMessage - A clear error message that developers can understand
-     * @param {{guild?: import('discord.js').Guild, eventName?: string}} context - Optional context objects from the event (e.g., the server)
-     */
     async handleEvent(errorMessage, context = {}) {
         const error = new Error(errorMessage);
         const type = context.eventName ? `Event Logic Error: ${context.eventName}` : 'Event Logic Error';
         await this.report(error, null, type);
     }
 
-    /**
-     * @param {string} errorMessage - A clear error message that developers can understand
-     * @param {string} type - A custom type for the error (e.g., “Service Initialization”)
-     * @param {string} [stack] - **Optional:** The `error.stack` of the original error
-     */
     async handleGeneric(errorMessage, type = 'Generic System Error', stack = null) {
         const error = new Error(errorMessage);
         if (stack) {
@@ -187,12 +182,6 @@ class Guardian {
         await this.report(error, null, type);
     }
 
-    /**
-     * The primary method for correcting an error
-     * @param {Error} error - The error object that occurred
-     * @param {import('discord.js').Interaction | null} interaction - The interaction during which the error occurred
-     * @param {string} type - The type of error (e.g., “Command Execution”)
-     */
     async report(error, interaction, type = "Unknown Error") {
         const errorId = this.generateErrorId();
         const context = {
