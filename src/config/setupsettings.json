@@ -7,6 +7,32 @@
         "description": "Log Channel Setup for the Server",
         "value": "logchannel",
         "emoji": "📁"
+      },
+      {
+        "name": "Team Roles",
+        "description": "Setup the team roles for the server",
+        "value": "teamroles",
+        "emoji": "👥"
+      }
+    ],
+    "teamroles": [
+      {
+        "name": "Add Team Role",
+        "description": "Add a team role to the server",
+        "value": "addteamrole",
+        "emoji": "➕"
+      },
+      {
+        "name": "Remove Team Role",
+        "description": "Remove a team role from the server",
+        "value": "removeteamrole",
+        "emoji": "➖"
+      },
+      {
+        "name": "Edit Team Role",
+        "description": "Edit a team role in the server",
+        "value": "editteamrole",
+        "emoji": "✏️"
       }
     ],
     "logchannel": [
@@ -56,6 +82,12 @@
         "name": "Audit Logs",
         "description": "Setup the channel for audit logs (Audit Log Update)",
         "value": "auditlogs",
+        "emoji": "📁"
+      },
+      {
+        "name": "Error Logs",
+        "description": "Setup the channel for error logs (Programming Errors)",
+        "value": "errorLogs",
         "emoji": "📁"
       }
     ]
