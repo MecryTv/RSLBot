@@ -1,5 +1,4 @@
 const { z } = require('zod');
-const LogChannelTypes = require('../enums/LogChannelTypes');
 
 module.exports = {
     name: 'DiscordLogChannel',
