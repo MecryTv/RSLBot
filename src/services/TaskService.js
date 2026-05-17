@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 const Guardian = require('./Guardian');
+const ms = require('ms');
+const TaskTypes = require('../enums/TaskTypes');
 
 class TaskService {
     constructor(client) {
@@ -19,7 +21,7 @@ class TaskService {
 
         this.checkInterval = setInterval(() => this.processDueTasks(), 30000);
 
-        logger.info(`📅 TaskService: ${this.runnables.size} Tasks (Daily/Fixed) synced`);
+        logger.info(`📅 TaskService: ${this.runnables.size} Tasks (${Array.from(this.runnables.values()).map(t => t.type).join(', ')}) synced`);
     }
 
     async _loadRunnables(dir) {
@@ -41,28 +43,35 @@ class TaskService {
             let task = await this.client.database.findOne('ScheduledTask', { name });
 
             const next = this.calculateNextRun(runnable);
+            const normalizedType = runnable.type.toUpperCase();
 
             if (!task) {
                 await this.client.database.save('ScheduledTask', name, {
                     name,
-                    type: runnable.type,
-                    daily: runnable.daily,
-                    time: runnable.time,
+                    type: TaskTypes[normalizedType] || normalizedType,
+                    expression: runnable.expression || null,
+                    time: runnable.time || null,
                     date: runnable.date || null,
                     nextRun: next,
                     enabled: true,
                     isRunning: false
                 });
-                logger.info(`🆕 Task "${name}" registriert (Next Run: ${next.toLocaleString('de-DE')})`);
+                logger.info(`🆕 Task "${name}" registert (Type: ${runnable.type} | Next Run: ${next.toLocaleString('de-DE')})`);
             } else {
-                if (task.time !== runnable.time || task.date !== runnable.date || task.daily !== runnable.daily) {
+                if (
+                    task.type !== (TaskTypes[normalizedType] || normalizedType) ||
+                    task.time !== (runnable.time || null) ||
+                    task.date !== (runnable.date || null) ||
+                    task.expression !== (runnable.expression || null)
+                ) {
                     await this.client.database.edit('ScheduledTask', task.id, {
-                        daily: runnable.daily,
-                        time: runnable.time,
+                        type: TaskTypes[normalizedType] || normalizedType,
+                        time: runnable.time || null,
                         date: runnable.date || null,
+                        expression: runnable.expression || null,
                         nextRun: next
                     });
-                    logger.info(`🔄 Task "${name}" Time/Date refresh (Next Run: ${next.toLocaleString('de-DE')})`);
+                    logger.info(`🔄 Task "${name}" refreshed (Next Run: ${next.toLocaleString('de-DE')})`);
                 }
             }
         }
@@ -93,7 +102,7 @@ class TaskService {
         await this.client.database.edit('ScheduledTask', taskData.id, { isRunning: true });
 
         try {
-            logger.info(`🚀 Starte Task: ${taskData.name}`);
+            logger.info(`🚀 Start Task: ${taskData.name} (${taskData.type})`);
             await runnable.execute(this.client);
 
             const updates = {
@@ -102,7 +111,7 @@ class TaskService {
                 lastError: null
             };
 
-            if (!taskData.daily) {
+            if (taskData.type === TaskTypes.ONCE) {
                 updates.enabled = false;
                 updates.nextRun = null;
             } else {
@@ -110,36 +119,54 @@ class TaskService {
             }
 
             await this.client.database.edit('ScheduledTask', taskData.id, updates);
-            logger.info(`✅ Task "${taskData.name}" finished successfully. Next Run: ${updates.nextRun ? new Date(updates.nextRun).toLocaleString('de-DE') : 'N/A'}`);
+            logger.info(`✅ Task "${taskData.name}" finished. Next Run: ${updates.nextRun ? new Date(updates.nextRun).toLocaleString('de-DE') : 'N/A'}`);
 
         } catch (err) {
-            logger.error(`❌ Task "${taskData.name}" fehlgeschlagen: ${err.message}`);
+            logger.error(`❌ Task "${taskData.name}" failed: ${err.message}`);
             await this.client.database.edit('ScheduledTask', taskData.id, {
                 isRunning: false,
                 lastError: err.message
             });
-            Guardian.handleGeneric(`Task Error: ${taskData.name}`, err);
+            await Guardian.handleGeneric(`Task Error: ${taskData.name}`, err);
         }
     }
 
     calculateNextRun(data) {
         const now = new Date();
-        const [hours, minutes] = data.time.split(':').map(Number);
+        const taskType = data.type.toUpperCase();
 
-        let nextRun = new Date();
+        switch (taskType) {
+            case TaskTypes.DAILY: {
+                const [hours, minutes] = data.time.split(':').map(Number);
+                let nextRun = new Date();
+                nextRun.setHours(hours, minutes, 0, 0);
 
-        if (data.daily) {
-            nextRun.setHours(hours, minutes, 0, 0);
-
-            if (nextRun <= now) {
-                nextRun.setDate(nextRun.getDate() + 1);
+                if (nextRun <= now) {
+                    nextRun.setDate(nextRun.getDate() + 1);
+                }
+                return nextRun;
             }
-        } else if (data.date) {
-            const [day, month, year] = data.date.split('.').map(Number);
-            nextRun = new Date(year, month - 1, day, hours, minutes, 0, 0);
-        }
 
-        return nextRun;
+            case TaskTypes.ONCE: {
+                const [hours, minutes] = data.time.split(':').map(Number);
+                const [day, month, year] = data.date.split('.').map(Number);
+                return new Date(year, month - 1, day, hours, minutes, 0, 0);
+            }
+
+            case TaskTypes.INTERVAL: {
+                const duration = ms(data.expression);
+                if (!duration) {
+                    logger.error(`[TaskService] Ungültige Interval-Expression im Task "${data.name}": ${data.expression}`);
+                    return new Date(Date.now() + 60000);
+                }
+                return new Date(Date.now() + duration);
+            }
+
+            default: {
+                logger.error(`[TaskService] Unbekannter Task-Typ: ${data.type} beim Task "${data.name}"`);
+                return new Date(Date.now() + 60000);
+            }
+        }
     }
 }
 
