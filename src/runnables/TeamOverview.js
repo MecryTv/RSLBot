@@ -6,7 +6,7 @@ const ComponentV2Container = require('../utils/ComponentV2Container');
 module.exports = {
     name: "TeamOverviewUpdate",
     type: TaskTypes.INTERVAL,
-    expression: "10s",
+    expression: "2h",
 
     async execute(client) {
         try {
