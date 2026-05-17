@@ -22,135 +22,87 @@ class SetupSettings extends Event {
 
   async execute(interaction) {
     const commandCustomId = MessageService.get("setupsettings.menuids.command");
-    const logChannelCustomId = MessageService.get("setupsettings.menuids.logchannel");
-    const teamRolesCustomId = MessageService.get("setupsettings.menuids.teamroles");
 
-    if (interaction.isStringSelectMenu()) {
-
-      if (interaction.customId === commandCustomId) {
-        const selectedOption = interaction.values[0];
-        if (selectedOption === "logchannel") {
-          await interaction.deferUpdate();
-          return await this.sendLogChannelOverview(interaction, logChannelCustomId);
-        } else if (selectedOption === "teamroles") {
-          await interaction.deferUpdate();
-          return await this.sendTeamRolesOverview(interaction, teamRolesCustomId);
-        }
-      }
-
-      if (interaction.customId === logChannelCustomId) {
-        await interaction.deferUpdate();
-        const logType = interaction.values[0];
-
-        const instructionContainer = ComponentV2Container(
-            "Channel Selection",
-            `Please select a thread channel for the log type **${logType}**`
-        );
-
-        const channelSelect = new ChannelSelectMenuBuilder()
-            .setCustomId(`select_channel:${logType}`)
-            .setPlaceholder(`📜 | Choose a Thread Channel for ${logType}`)
-            .addChannelTypes(ChannelTypes.PublicThread, ChannelTypes.PrivateThread);
-
-        const row = new ActionRowBuilder().addComponents(channelSelect);
-
-        return await interaction.editReply({
-          content: "",
-          components: [instructionContainer, row],
-          flags: 32768
-        });
-      }
-
-      if (interaction.customId === teamRolesCustomId) {
-        const action = interaction.values[0];
-
-        if (action === "addteamrole") {
-          await interaction.deferUpdate();
-
-          const container = ComponentV2Container("Role Selection", "Please choose the Discord Role you want to add to the Team Overview.");
-          const roleSelect = new RoleSelectMenuBuilder()
-              .setCustomId("teamrole_add_select")
-              .setPlaceholder("👥 | Select a Discord Role");
-
-          return await interaction.editReply({
-            components: [container, new ActionRowBuilder().addComponents(roleSelect)]
-          });
-        }
-
-        if (action === "removeteamrole" || action === "editteamrole") {
-          await interaction.deferUpdate();
-
-          const activeRoles = await interaction.client.database.findMany("TeamRoles", { guildId: interaction.guildId });
-          if (activeRoles.length === 0) {
-            const container = ComponentV2Container("⚠️ No Roles Found", "There are no team roles configured yet that you could modify.");
-            return await interaction.editReply({ components: [container] });
-          }
-
-          const menuId = action === "removeteamrole" ? "teamrole_remove_select" : "teamrole_edit_select";
-          const placeholder = action === "removeteamrole" ? "❌ | Choose a Role to Remove" : "✏️ | Choose a Role to Edit";
-
-          const roleMenu = new StringSelectMenuBuilder()
-              .setCustomId(menuId)
-              .setPlaceholder(placeholder);
-
-          activeRoles.sort((a, b) => a.sortIndex - b.sortIndex);
-          activeRoles.forEach(r => {
-            roleMenu.addOptions(new StringSelectMenuOptionBuilder().setLabel(`${r.roleName} (Index: ${r.sortIndex})`).setValue(r.roleId));
-          });
-
-          const container = ComponentV2Container("Role Selection", `Please select the team role you want to ${action === "removeteamrole" ? "remove" : "edit"}.`);
-          return await interaction.editReply({ components: [container, new ActionRowBuilder().addComponents(roleMenu)] });
-        }
-      }
-
-      if (interaction.customId === "teamrole_remove_select") {
-        await interaction.deferUpdate();
-        const roleId = interaction.values[0];
-
-        try {
-          await interaction.client.database.delete("TeamRoles", roleId, true);
-          return await this.sendTeamRolesOverview(interaction, teamRolesCustomId);
-        } catch (error) {
-          console.error("Database Delete Error:", error);
-          return Guardian.handleEvent("Error while removing role from Database", interaction);
-        }
-      }
-
-      if (interaction.customId === "teamrole_edit_select") {
-        const roleId = interaction.values[0];
-        return await this.sendSortIndexModal(interaction, `teamrole_edit_modal:${roleId}`);
-      }
+    if (interaction.isStringSelectMenu() && interaction.customId === commandCustomId) {
+      await interaction.deferUpdate();
+      const category = interaction.values[0];
+      return await this.sendCategoryOverview(interaction, category);
     }
 
-    if (interaction.isRoleSelectMenu() && interaction.customId === "teamrole_add_select") {
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith("setup_action:")) {
+      await interaction.deferUpdate();
+      const category = interaction.customId.split(":")[1];
+      const action = interaction.values[0]; // "add", "edit", "remove"
+      return await this.handleCategoryAction(interaction, category, action);
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith("setup_key_select:")) {
+      const [_, category, action] = interaction.customId.split(":");
+      const selectedKey = interaction.values[0];
+
+      if (action === "remove") {
+        await interaction.deferUpdate();
+        return await this.handleGenericDelete(interaction, category, selectedKey);
+      }
+
+      await interaction.deferUpdate();
+      return await this.sendChannelSelector(interaction, category, action, selectedKey);
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith("setup_role_select:")) {
+      const [_, action] = interaction.customId.split(":");
+      const roleId = interaction.values[0];
+
+      if (action === "remove") {
+        await interaction.deferUpdate();
+        try {
+          await interaction.client.database.delete("TeamRoles", roleId, false); // Nutzt jetzt sauber Soft Delete!
+          return await this.sendCategoryOverview(interaction, "teamroles");
+        } catch (error) {
+          console.error(error);
+          return Guardian.handleEvent("Error removing role from Database", interaction);
+        }
+      }
+
+      return await this.sendSortIndexModal(interaction, `teamrole_edit_modal:${roleId}`);
+    }
+
+    if (interaction.isRoleSelectMenu() && interaction.customId === "setup_role_add_select") {
       const roleId = interaction.values[0];
       return await this.sendSortIndexModal(interaction, `teamrole_add_modal:${roleId}`);
     }
 
-    if (interaction.isChannelSelectMenu() && interaction.customId.startsWith("select_channel:")) {
+    if (interaction.isChannelSelectMenu() && interaction.customId.startsWith("setup_channel_save:")) {
       await interaction.deferUpdate();
-      const logType = interaction.customId.split(":")[1];
+      const [_, category, action, selectedKey] = interaction.customId.split(":");
       const channelId = interaction.values[0];
-      const channelName = interaction.channels.first()?.name || "Unknown Thread";
+      const channelName = interaction.channels.first()?.name || "Unknown Channel";
 
       try {
-        const uniqueId = `${interaction.guildId}-${logType}`;
-        await interaction.client.database.save("DiscordLogChannel", uniqueId, {
-          guildId: interaction.guildId,
-          logType: logType,
-          channelId: channelId,
-          name: channelName
-        });
-        return await this.sendLogChannelOverview(interaction, logChannelCustomId);
+        const modelName = this._getModelName(category);
+        const uniqueId = `${interaction.guildId}-${selectedKey}`;
+
+        const saveData = { guildId: interaction.guildId };
+        if (category === "logchannel") {
+          saveData.logType = selectedKey;
+          saveData.channelId = channelId;
+          saveData.name = channelName;
+        } else {
+          saveData.settingKey = selectedKey;
+          saveData.value = channelId;
+          saveData.name = channelName;
+        }
+
+        await interaction.client.database.save(modelName, uniqueId, saveData);
+        return await this.sendCategoryOverview(interaction, category);
       } catch (error) {
-        console.error("Database Save Error:", error);
-        return Guardian.handleEvent("Error while Saving in Database", interaction);
+        console.error(error);
+        return Guardian.handleEvent("Error saving channel configuration", interaction);
       }
     }
 
     if (interaction.isModalSubmit() && interaction.customId.startsWith("teamrole_")) {
       await interaction.deferUpdate();
-
       const parts = interaction.customId.split(/[_:]/);
       const actionType = parts[1];
       const roleId = parts[3];
@@ -159,7 +111,7 @@ class SetupSettings extends Event {
       const sortIndex = parseInt(indexInput, 10);
 
       if (isNaN(sortIndex) || sortIndex < 0) {
-        const container = ComponentV2Container("⚠️ Invalid Input", "The sort index must be a valid, positive number (e.g. 0, 1, 2).");
+        const container = ComponentV2Container("⚠️ Invalid Input", "The sort index must be a valid, positive number.");
         return await interaction.editReply({ components: [container] });
       }
 
@@ -180,68 +132,167 @@ class SetupSettings extends Event {
           });
         }
 
-        return await this.sendTeamRolesOverview(interaction, teamRolesCustomId);
+        return await this.sendCategoryOverview(interaction, "teamroles");
       } catch (error) {
-        console.error("Database Role Save Error:", error);
+        console.error(error);
         return Guardian.handleEvent("Error while updating Team Role in Database", interaction);
       }
     }
   }
 
-  async sendLogChannelOverview(interaction, logChannelCustomId) {
+  _getModelName(category) {
+    if (category === "logchannel") return "DiscordLogChannel";
+    if (category === "teamroles") return "TeamRoles";
+    if (category === "additionalsettings") return "AdditionalSettings";
+    throw new Error(`Unknown category: ${category}`);
+  }
+
+  _getKeyField(category) {
+    if (category === "logchannel") return "logType";
+    if (category === "teamroles") return "roleId";
+    if (category === "additionalsettings") return "settingKey";
+  }
+
+  async sendCategoryOverview(interaction, category) {
     try {
-      const setupSettingsConf = ConfigService.get("setupsettings");
-      if (!setupSettingsConf || !setupSettingsConf[0]) throw new Error("Config 'setupsettings' not found");
-      const config = setupSettingsConf[0];
+      const config = ConfigService.get("setupsettings")[0];
+      const modelName = this._getModelName(category);
+      const keyField = this._getKeyField(category);
 
-      const activeChannels = await interaction.client.database.findMany("DiscordLogChannel", { guildId: interaction.guildId });
-      const logOptions = config.logchannel;
-      const activeMap = new Map(activeChannels.map(ch => [ch.logType, ch.channelId]));
+      const dbEntries = await interaction.client.database.findMany(modelName, { guildId: interaction.guildId });
 
-      const statusList = logOptions.map(option => {
-        const setChannelId = activeMap.get(option.value);
-        const statusEmoji = setChannelId ? "✅" : "❌";
-        const channelInfo = setChannelId ? `→ <#${setChannelId}>` : "*Not Configured*";
-        return `${statusEmoji} **${option.name}**\n╰ ${channelInfo}`;
-      }).join("\n\n");
+      let statusText = "";
+      let title = "";
 
-      const container = ComponentV2Container("Log Channel Configuration", `State of all Log System Channels:\n\n${statusList}`);
+      if (category === "teamroles") {
+        title = "👥 Team Roles Configuration";
+        dbEntries.sort((a, b) => a.sortIndex - b.sortIndex);
+        statusText = dbEntries.length > 0
+            ? dbEntries.map(r => `\`#${r.sortIndex}\` → <@&${r.roleId}>`).join("\n")
+            : "*No Team Roles configured yet.*";
+      } else {
+        title = category === "logchannel" ? "📁 Log Channel Configuration" : "⚙️ Additional Settings Configuration";
+        const options = config[category];
+        const activeMap = new Map(dbEntries.map(e => [e[keyField], e.channelId || e.value]));
+
+        statusText = options.map(opt => {
+          const channelId = activeMap.get(opt.value);
+          return `${channelId ? "✅" : "❌"} **${opt.name}**\n╰ ${channelId ? `→ <#${channelId}>` : "*Not Configured*"}`;
+        }).join("\n\n");
+      }
+
+      const container = ComponentV2Container(title, statusText);
+
       const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId(logChannelCustomId)
-          .setPlaceholder("📜 | Choose a Category")
-          .addOptions(config.logchannel.map(page => new StringSelectMenuOptionBuilder().setLabel(page.name).setValue(page.value).setDescription(page.description).setEmoji(page.emoji)));
+          .setCustomId(`setup_action:${category}`)
+          .setPlaceholder("🛠️ | Select an Action")
+          .addOptions(config.shared_actions.map(act =>
+              new StringSelectMenuOptionBuilder().setLabel(act.name).setValue(act.value).setDescription(act.description).setEmoji(act.emoji)
+          ));
 
-      await interaction.editReply({ content: "", components: [container, new ActionRowBuilder().addComponents(selectMenu)], flags: 32768 });
+      await interaction.editReply({
+        content: "",
+        components: [container, new ActionRowBuilder().addComponents(selectMenu)],
+        flags: 32768
+      });
     } catch (error) {
-      console.error("Overview Error:", error);
-      await Guardian.handleEvent("An Overview Error", interaction);
+      console.error(error);
+      await Guardian.handleEvent("An Overview Generation Error", interaction);
     }
   }
 
-  async sendTeamRolesOverview(interaction, teamRolesCustomId) {
+  async handleCategoryAction(interaction, category, action) {
     try {
-      const setupSettingsConf = ConfigService.get("setupsettings");
-      if (!setupSettingsConf || !setupSettingsConf[0]) throw new Error("Config 'setupsettings' not found");
-      const config = setupSettingsConf[0];
+      const config = ConfigService.get("setupsettings")[0];
+      const modelName = this._getModelName(category);
+      const keyField = this._getKeyField(category);
 
-      const activeRoles = await interaction.client.database.findMany("TeamRoles", { guildId: interaction.guildId });
+      const dbEntries = await interaction.client.database.findMany(modelName, { guildId: interaction.guildId });
+      const activeKeys = new Set(dbEntries.map(e => e[keyField]));
 
-      activeRoles.sort((a, b) => a.sortIndex - b.sortIndex);
+      if (category === "teamroles") {
+        if (action === "add") {
+          const container = ComponentV2Container("Add Team Role", "Please select a Discord Role to register in the Team Display.");
+          const roleSelect = new RoleSelectMenuBuilder().setCustomId("setup_role_add_select").setPlaceholder("👥 | Choose a Role");
+          return await interaction.editReply({ components: [container, new ActionRowBuilder().addComponents(roleSelect)] });
+        }
 
-      const statusList = activeRoles.length > 0
-          ? activeRoles.map((r, index) => `\`#${r.sortIndex}\` → <@&${r.roleId}>`).join("\n")
-          : "*No Team Roles configured yet.*";
+        if (dbEntries.length === 0) {
+          return await interaction.editReply({ components: [ComponentV2Container("⚠️ No Roles", "There are no configured roles to modify.")] });
+        }
 
-      const container = ComponentV2Container("Team Roles Overview", `Configure and order the roles for your Team Display:\n\n${statusList}`);
+        const menu = new StringSelectMenuBuilder().setCustomId(`setup_role_select:${action}`).setPlaceholder("👥 | Choose a Team Role");
+        dbEntries.sort((a, b) => a.sortIndex - b.sortIndex);
+        dbEntries.forEach(r => menu.addOptions(new StringSelectMenuOptionBuilder().setLabel(`${r.roleName} (Index: ${r.sortIndex})`).setValue(r.roleId)));
+
+        return await interaction.editReply({ components: [ComponentV2Container(`${action === "edit" ? "Edit" : "Remove"} Team Role`, "Select a role from the list below:"), new ActionRowBuilder().addComponents(menu)] });
+      }
+
+      const options = config[category];
+      let filteredOptions = [];
+
+      if (action === "add") {
+        filteredOptions = options.filter(opt => !activeKeys.has(opt.value));
+      } else {
+        filteredOptions = options.filter(opt => activeKeys.has(opt.value));
+      }
+
+      if (filteredOptions.length === 0) {
+        const desc = action === "add" ? "All available options in this category are already configured." : "There are no configured entries to modify in this category.";
+        return await interaction.editReply({ components: [ComponentV2Container("⚠️ No Options Available", desc)] });
+      }
+
       const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId(teamRolesCustomId)
-          .setPlaceholder("👥 | Select a Team Action")
-          .addOptions(config.teamroles.map(opt => new StringSelectMenuOptionBuilder().setLabel(opt.name).setValue(opt.value).setDescription(opt.description).setEmoji(opt.emoji)));
+          .setCustomId(`setup_key_select:${category}:${action}`)
+          .setPlaceholder("⚙️ | Choose an Entry");
 
-      await interaction.editReply({ content: "", components: [container, new ActionRowBuilder().addComponents(selectMenu)], flags: 32768 });
+      filteredOptions.forEach(opt => {
+        selectMenu.addOptions(new StringSelectMenuOptionBuilder().setLabel(opt.name).setValue(opt.value).setDescription(opt.description).setEmoji(opt.emoji));
+      });
+
+      const title = `${action.toUpperCase()} - Select Option`;
+      const container = ComponentV2Container(title, `Please select which option you want to **${action}**.`);
+
+      return await interaction.editReply({ components: [container, new ActionRowBuilder().addComponents(selectMenu)] });
+
     } catch (error) {
-      console.error("Team Roles Overview Error:", error);
-      await Guardian.handleEvent("An Overview Error for Team Roles", interaction);
+      console.error(error);
+      await Guardian.handleEvent("Action Handling Error", interaction);
+    }
+  }
+
+  async sendChannelSelector(interaction, category, action, selectedKey) {
+    const config = ConfigService.get("setupsettings")[0];
+    const targetConfig = config[category].find(opt => opt.value === selectedKey);
+
+    const title = `${action === "add" ? "Add" : "Edit"} - Channel Selection`;
+    const container = ComponentV2Container(title, `Please select the target channel for **${targetConfig?.name || selectedKey}**.`);
+
+    const channelSelect = new ChannelSelectMenuBuilder()
+        .setCustomId(`setup_channel_save:${category}:${action}:${selectedKey}`)
+        .setPlaceholder("📁 | Select a Channel");
+
+    if (targetConfig?.channel_type === "GuildText") {
+      channelSelect.addChannelTypes(ChannelTypes.Text);
+    } else {
+      channelSelect.addChannelTypes(ChannelTypes.PublicThread, ChannelTypes.PrivateThread);
+    }
+
+    await interaction.editReply({
+      components: [container, new ActionRowBuilder().addComponents(channelSelect)]
+    });
+  }
+
+  async handleGenericDelete(interaction, category, selectedKey) {
+    try {
+      const modelName = this._getModelName(category);
+      const uniqueId = `${interaction.guildId}-${selectedKey}`;
+
+      await interaction.client.database.delete(modelName, uniqueId, false); // Führt korrekten Soft-Delete aus!
+      return await this.sendCategoryOverview(interaction, category);
+    } catch (error) {
+      console.error(error);
+      return Guardian.handleEvent("Error executing generic delete", interaction);
     }
   }
 

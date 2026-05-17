@@ -13,83 +13,48 @@
         "description": "Setup the team roles for the server",
         "value": "teamroles",
         "emoji": "👥"
+      },
+      {
+        "name": "Additional Settings",
+        "description": "Additional settings for the server",
+        "value": "additionalsettings",
+        "emoji": "⚙️"
       }
     ],
-    "teamroles": [
+    "shared_actions": [
       {
-        "name": "Add Team Role",
-        "description": "Add a team role to the server",
-        "value": "addteamrole",
+        "name": "Add Entry",
+        "description": "Add a new configuration entry",
+        "value": "add",
         "emoji": "➕"
       },
       {
-        "name": "Remove Team Role",
-        "description": "Remove a team role from the server",
-        "value": "removeteamrole",
-        "emoji": "➖"
+        "name": "Edit Entry",
+        "description": "Modify an existing configuration entry",
+        "value": "edit",
+        "emoji": "✏️"
       },
       {
-        "name": "Edit Team Role",
-        "description": "Edit a team role in the server",
-        "value": "editteamrole",
-        "emoji": "✏️"
+        "name": "Remove Entry",
+        "description": "Delete a configuration entry",
+        "value": "remove",
+        "emoji": "➖"
+      }
+    ],
+    "additionalsettings": [
+      {
+        "name": "Team Overview Channel",
+        "description": "Channel where users can see the teams and members",
+        "value": "teamoverviewchannel",
+        "emoji": "📊",
+        "channel_type": "GuildText"
       }
     ],
     "logchannel": [
-      {
-        "name": "Connection Logs",
-        "description": "Setup the channel for connection (Join/Leave) logs",
-        "value": "connectionlogs",
-        "emoji": "📁"
-      },
-      {
-          "name": "Moderation Logs",
-          "description": "Setup the channel for moderation logs (Ban/Kick/Mute/Unmute)",
-          "value": "moderationlogs",
-          "emoji": "📁"
-      },
-      {
-          "name": "Message Logs",
-          "description": "Setup the channel for message logs (Message Delete/Edit)",
-          "value": "messagelogs",
-          "emoji": "📁"
-      },
-      {
-          "name": "Voice Logs",
-          "description": "Setup the channel for voice logs (Voice Join/Leave/Mute/Deaf)",
-          "value": "voicelogs",
-          "emoji": "📁"
-      },
-      {
-          "name": "Role Logs",
-          "description": "Setup the channel for role logs (Role Create/Delete/Update)",
-          "value": "rolelogs",
-          "emoji": "📁"
-      },
-      {
-          "name": "Channel Logs",
-          "description": "Setup the channel for channel logs (Channel Create/Delete/Update)",
-          "value": "channellogs",
-          "emoji": "📁"
-      },
-      {
-        "name": "Profile Logs",
-        "description": "Setup the channel for profile logs (Profile Update)",
-        "value": "profilelogs",
-        "emoji": "📁"
-      },
-      {
-        "name": "Audit Logs",
-        "description": "Setup the channel for audit logs (Audit Log Update)",
-        "value": "auditlogs",
-        "emoji": "📁"
-      },
-      {
-        "name": "Error Logs",
-        "description": "Setup the channel for error logs (Programming Errors)",
-        "value": "errorLogs",
-        "emoji": "📁"
-      }
+      { "name": "Connection Logs", "value": "connectionlogs", "emoji": "🔌", "channel_type": "Thread" },
+      { "name": "Moderation Logs", "value": "moderationlogs", "emoji": "🛡️", "channel_type": "Thread" },
+      { "name": "Message Logs", "value": "messagelogs", "emoji": "📝", "channel_type": "Thread" },
+      { "name": "Voice Logs", "value": "voicelogs", "emoji": "🔊", "channel_type": "Thread" }
     ]
   }
 ]

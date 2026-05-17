@@ -8,6 +8,7 @@
   "menuids": {
     "command": "setup-settings-menu",
     "logchannel": "setup-settings-logchannel-menu",
-    "teamroles": "setup-settings-teamroles-menu"
+    "teamroles": "setup-settings-teamroles-menu",
+    "additionalsettings": "setup-settings-additionalsettings-menu"
   }
 }
