@@ -1,6 +1,6 @@
-const Command = require("../structures/Command");
+const Command = require("../../structures/Command");
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
-const ComponentV2Container = require("../utils/ComponentV2Container");
+const ComponentV2Container = require("../../utils/ComponentV2Container");
 
 class Testing extends Command {
   constructor() {
