@@ -15,6 +15,12 @@
         "emoji": "👥"
       },
       {
+        "name": "Support System",
+        "description": "Setup the support system for the server",
+        "value": "supportsystem",
+        "emoji": "🆘"
+      },
+      {
         "name": "Additional Settings",
         "description": "Additional settings for the server",
         "value": "additionalsettings",
@@ -39,6 +45,66 @@
         "description": "Delete a configuration entry",
         "value": "remove",
         "emoji": "➖"
+      }
+    ],
+    "supportsystem": [
+      {
+        "name": "Tickets Forum",
+        "description": "Channel where users can create support tickets",
+        "value": "ticketsforum",
+        "emoji": "🎫",
+        "channel_type": "Forum"
+      },
+      {
+        "name": "Transcript Channel",
+        "description": "Channel where ticket transcripts are sent",
+        "value": "transcriptchannel",
+        "emoji": "📜",
+        "channel_type": "Thread"
+      },
+      {
+        "name": "Ticket Panel Channel",
+        "description": "Channel where the ticket panel is located",
+        "value": "ticketpanelchannel",
+        "emoji": "📌",
+        "channel_type": "GuildText"
+      },
+      {
+        "name": "Support Ticket Waitroom",
+        "description": "Channel where users wait before getting Support Team's attention",
+        "value": "supportticketwaitroom",
+        "emoji": "⏳",
+        "channel_type": "GuildVoice"
+      },
+      {
+        "name": "Support Roles",
+        "description": "Roles that can manage support tickets",
+        "value": "supportroles",
+        "emoji": "🛠️"
+      },
+      {
+        "name": "Support Time",
+        "description": "Time where the Support System is active (e.g., 9 AM - 5 PM)",
+        "value": "supporttime",
+        "emoji": "⏰"
+      },
+      {
+        "name": "Max Open Tickets",
+        "description": "Maximum number of open tickets a user can have",
+        "value": "maxopentickets",
+        "emoji": "📊"
+      },
+      {
+        "name": "Ticket Panel Message",
+        "description": "Write a message that show on the ticket panel channel",
+        "value": "ticketpanelmessage",
+        "emoji": "📝"
+      },
+      {
+        "name": "Ticket Create Options",
+        "description": "Options for creating tickets (e.g., categories, priorities)",
+        "value": "ticketcreateoptions",
+        "emoji": "⚙️"
       }
     ],
     "additionalsettings": [
