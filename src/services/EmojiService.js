@@ -80,6 +80,32 @@ class EmojiService {
         };
     }
 
+    saveServerEmoji(name, id) {
+        const emojisPath = path.join(__dirname, '..', 'config', 'emojis.json');
+        try {
+            let emojiData = {};
+            if (fs.existsSync(emojisPath)) {
+                const fileContent = fs.readFileSync(emojisPath, 'utf-8');
+                let parsed = JSON.parse(fileContent);
+                emojiData = Array.isArray(parsed) ? (parsed[0] || {}) : parsed;
+            }
+
+            if (!emojiData.server_custom) {
+                emojiData.server_custom = {};
+            }
+
+            emojiData.server_custom[name] = id;
+
+            fs.writeFileSync(emojisPath, JSON.stringify([emojiData], null, 4), 'utf-8');
+
+            this.emojis.set(`server_custom.${name}`, id);
+            return `server_custom.${name}`;
+        } catch (error) {
+            Guardian.handleGeneric('Error saving custom server emoji to file', 'EmojiService SaveServerEmoji', error.stack);
+            return null;
+        }
+    }
+
     getEmojiCount() {
         return this.emojis.size;
     }
